@@ -10,6 +10,8 @@
   <!-- Leaflet for interactive emergency maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Supabase JS Client for Real-time CAD Backend Integration -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
@@ -1124,12 +1126,24 @@
       </div>
 
       <!-- Confirmation safeguard banner -->
-      <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #991b1b; display: flex; gap: 8px;">
+      <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 12.5px; color: #991b1b; display: flex; gap: 8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         <div>
           <strong>Accidental Alert Protection:</strong> Once confirmed, this signal alerts active response teams. If someone is severely injured, dial <strong>112</strong> immediately.
         </div>
       </div>
+
+      <!-- Quick 112 Dial Shortcut -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #fff1f2; border: 1px solid #ffe4e6; padding: 8px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;">
+        <span style="color: #9f1239; font-weight: 600;">Immediate life threat or unconscious?</span>
+        <a href="tel:112" style="background: #dc2626; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          Call 112 Now
+        </a>
+      </div>
+
+      <!-- Validation / Status Error Banner -->
+      <div id="sosErrorMsg" style="display: none; background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
 
       <form id="sosForm" onsubmit="handleSOSSubmit(event)">
         <!-- Incident Type -->
@@ -1143,16 +1157,16 @@
           </select>
         </div>
 
-        <!-- Geolocation Telemetry -->
+        <!-- Geolocation Telemetry (Strictly on user request) -->
         <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span class="form-label" style="margin-bottom:0;">Live GPS Telemetry</span>
-            <button type="button" onclick="acquireLiveLocation()" style="font-size: 11px; background: #0284c7; color: #fff; border:none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            <span class="form-label" style="margin-bottom:0;">Live GPS Telemetry (On-Demand)</span>
+            <button type="button" id="btnDetectCoords" onclick="acquireLiveLocation()" style="font-size: 11px; background: #0284c7; color: #fff; border:none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
               Detect Coordinates
             </button>
           </div>
           <div id="sosGpsText" style="font-size: 12px; color: #64748b;">
-            Click 'Detect Coordinates' to capture device GPS fix with accuracy.
+            Location permission requested on-demand only. Tap 'Detect Coordinates' or provide landmark below.
           </div>
         </div>
 
@@ -1816,7 +1830,17 @@
     }
 
     function openSOSModal() {
-      acquireLiveLocation();
+      // Clear any prior validation errors
+      const errBox = document.getElementById('sosErrorMsg');
+      if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
+      }
+      const geoText = document.getElementById('sosGpsText');
+      if (geoText && !currentCoords) {
+        geoText.textContent = "Location permission requested on-demand only. Tap 'Detect Coordinates' or provide landmark below.";
+        geoText.style.color = "#64748b";
+      }
       openModal('sosModal');
     }
 
@@ -1845,33 +1869,57 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Geolocation Handling
+    // Geolocation Handling (Requested strictly on user action)
     function acquireLiveLocation() {
       const geoText = document.getElementById('sosGpsText');
       const geoPill = document.getElementById('geoIndicator');
+      const detectBtn = document.getElementById('btnDetectCoords');
+      if (detectBtn) detectBtn.disabled = true;
+
       if (!navigator.geolocation) {
-        geoText.textContent = "Geolocation is not supported by your browser. Please fill landmark description.";
-        geoPill.textContent = "📍 GPS Unavailable";
+        if (geoText) {
+          geoText.textContent = "Geolocation is not supported by your browser. Please provide manual landmark below.";
+          geoText.style.color = "#b45309";
+        }
+        if (geoPill) geoPill.textContent = "📍 GPS Unsupported";
+        if (detectBtn) detectBtn.disabled = false;
         return;
       }
 
-      geoText.textContent = "Acquiring high-accuracy GPS fix from satellite sensors...";
-      geoPill.textContent = "📍 Acquiring GPS...";
+      if (geoText) {
+        geoText.textContent = "Requesting permission & capturing GPS coordinates...";
+        geoText.style.color = "#0284c7";
+      }
+      if (geoPill) geoPill.textContent = "📍 Acquiring GPS...";
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = parseFloat(pos.coords.latitude.toFixed(5));
           const lng = parseFloat(pos.coords.longitude.toFixed(5));
           const acc = Math.round(pos.coords.accuracy);
-          currentCoords = { lat, lng, acc };
-          geoText.textContent = `GPS Fix Acquired: ${lat}, ${lng} (±${acc}m accuracy)`;
-          geoText.style.color = "#15803d";
-          geoPill.textContent = `📍 GPS Active (±${acc}m)`;
+          currentCoords = { lat, lng, acc, isManual: false };
+          if (geoText) {
+            geoText.textContent = `Verified GPS Fix: ${lat}, ${lng} (±${acc}m accuracy)`;
+            geoText.style.color = "#15803d";
+          }
+          if (geoPill) geoPill.textContent = `📍 GPS Active (±${acc}m)`;
+          if (detectBtn) detectBtn.disabled = false;
         },
         (err) => {
-          geoText.textContent = "GPS signal unavailable or permission denied. Please enter manual landmark details.";
-          geoText.style.color = "#dc2626";
-          geoPill.textContent = "📍 Manual Landmark Only";
+          let msg = "GPS permission denied or unavailable. Manual landmark description required.";
+          if (err.code === 1) {
+            msg = "Location permission was denied. Please enter a manual landmark description.";
+          } else if (err.code === 2) {
+            msg = "Position unavailable from satellite/network. Please enter a manual landmark.";
+          } else if (err.code === 3) {
+            msg = "GPS request timed out. Please enter a manual landmark.";
+          }
+          if (geoText) {
+            geoText.textContent = msg;
+            geoText.style.color = "#dc2626";
+          }
+          if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
+          if (detectBtn) detectBtn.disabled = false;
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
@@ -1893,101 +1941,262 @@
       }
     });
 
-    // SOS Form Submission
+    // Helper: Collision-resistant unique incident reference code (Base32 unambiguous)
+    function generateIncidentRef() {
+      const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let ref = '';
+      do {
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        ref = `PB-${code}`;
+      } while (incidents.some(i => i.ref === ref));
+      return ref;
+    }
+
+    // SOS Form Submission with Validation, Duplicate Prevention, and Truthful Backend/Demo Dispatch
     function handleSOSSubmit(e) {
       e.preventDefault();
       const btn = document.getElementById('btnConfirmSOS');
       if (btn.disabled) return;
 
+      const errBox = document.getElementById('sosErrorMsg');
+      const landmarkInput = document.getElementById('sosLandmark');
+      const landmark = landmarkInput.value.trim();
       const type = document.getElementById('sosType').value;
-      const landmark = document.getElementById('sosLandmark').value.trim();
       const desc = document.getElementById('sosDesc').value.trim();
       const includeMed = document.getElementById('sosIncludeMedical').checked;
 
-      btn.disabled = true;
-      btn.querySelector('span:first-child').textContent = "Broadcasting Alert...";
+      if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
+      }
 
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.querySelector('span:first-child').textContent = "Confirm & Broadcast SOS";
-
-        const newRef = "PB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-        const newInc = {
-          id: "inc-" + Date.now(),
-          ref: newRef,
-          type: type.replace('_', ' ').toUpperCase(),
-          desc: desc || "Emergency SOS broadcast triggered from mobile interface.",
-          status: "SUBMITTED",
-          lat: currentCoords ? currentCoords.lat : 12.9716,
-          lng: currentCoords ? currentCoords.lng : 77.5946,
-          accuracy: currentCoords ? currentCoords.acc : 15,
-          landmark: landmark,
-          medical: includeMed ? "O+ Blood | Allergies: Penicillin, Dust | Salbutamol" : "None consented",
-          timestamp: new Date().toISOString(),
-          acknowledgedBy: null,
-          assignedUnit: null,
-          isOfflineDraft: isSimulatedOffline,
-          events: [
-            { status: "SUBMITTED", time: "Just now", desc: isSimulatedOffline ? "Offline draft saved locally" : "Incident broadcast confirmed" }
-          ]
-        };
-
-        incidents.unshift(newInc);
-        activeIncidentId = newInc.id;
-        saveIncidents();
-        closeModal('sosModal');
-
-        if (isSimulatedOffline) {
-          alert("Network connection unavailable. Emergency incident saved as an OFFLINE DRAFT on your device. Please dial official emergency 112 immediately.");
-        } else {
-          openTrackingModal(newInc.id);
+      // 1. Validation before submission
+      if (!landmark || landmark.length < 3) {
+        if (errBox) {
+          errBox.textContent = "Validation Error: Please provide a specific landmark, building, or room location so responders can locate you.";
+          errBox.style.display = 'block';
         }
-      }, 700);
+        landmarkInput.focus();
+        return;
+      }
+
+      // 2. Prevent accidental duplicate submissions
+      btn.disabled = true;
+      btn.style.opacity = '0.65';
+      btn.style.cursor = 'not-allowed';
+      const originalLabel = btn.querySelector('span:first-child').textContent;
+      btn.querySelector('span:first-child').textContent = "Broadcasting Emergency SOS...";
+
+      const newRef = generateIncidentRef();
+
+      // 3. Handle Simulated Offline Network Drop
+      if (isSimulatedOffline) {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.querySelector('span:first-child').textContent = originalLabel;
+
+          const newInc = {
+            id: "inc-" + Date.now(),
+            ref: newRef,
+            type: type.replace('_', ' ').toUpperCase(),
+            desc: desc || "Emergency SOS broadcast triggered from mobile interface.",
+            status: "SUBMITTED",
+            lat: currentCoords ? currentCoords.lat : null,
+            lng: currentCoords ? currentCoords.lng : null,
+            accuracy: currentCoords ? currentCoords.acc : null,
+            landmark: landmark,
+            medical: includeMed ? (localStorage.getItem('pb_medical_summary') || "O+ Blood | Allergies: Penicillin, Dust | Salbutamol") : "None consented",
+            timestamp: new Date().toISOString(),
+            acknowledgedBy: null,
+            assignedUnit: null,
+            isOfflineDraft: true,
+            isDemoMode: true,
+            events: [
+              { status: "SUBMITTED", time: "Just now", desc: "Network dropped — Saved as OFFLINE DRAFT on device (Not sent to dispatch)" }
+            ]
+          };
+
+          const drafts = JSON.parse(localStorage.getItem('pb_offline_drafts') || '[]');
+          drafts.unshift(newInc);
+          localStorage.setItem('pb_offline_drafts', JSON.stringify(drafts));
+
+          closeModal('sosModal');
+          alert(`⚠️ NETWORK UNAVAILABLE: Alert stored as an OFFLINE DRAFT (${newRef}) on this device. It has NOT reached responders. Please dial official emergency 112 immediately.`);
+        }, 500);
+        return;
+      }
+
+      // 4. Backend Persistence (Supabase if configured, otherwise Isolated Demo Mode)
+      const supabaseUrl = window.VITE_SUPABASE_URL || '';
+      const supabaseKey = window.VITE_SUPABASE_ANON_KEY || '';
+      const isSupabaseLive = Boolean(typeof supabase !== 'undefined' && supabase.createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
+
+      if (isSupabaseLive) {
+        try {
+          const sb = supabase.createClient(supabaseUrl, supabaseKey);
+          sb.from('incidents').insert([{
+            reference_code: newRef,
+            incident_type: type,
+            description: desc,
+            latitude: currentCoords ? currentCoords.lat : null,
+            longitude: currentCoords ? currentCoords.lng : null,
+            location_accuracy: currentCoords ? currentCoords.acc : null,
+            location_description: landmark,
+            status: 'SUBMITTED',
+            consented_medical_summary: includeMed ? { blood_group: 'O+', allergies: 'Penicillin, Dust', medications: 'Salbutamol' } : null
+          }]).select().then(({ data, error }) => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.querySelector('span:first-child').textContent = originalLabel;
+
+            if (error) {
+              if (errBox) {
+                errBox.textContent = `Backend Error: Emergency incident was NOT submitted (${error.message}). Please dial 112 immediately.`;
+                errBox.style.display = 'block';
+              }
+              return;
+            }
+
+            const created = data && data[0];
+            const newInc = {
+              id: created ? created.id : "inc-" + Date.now(),
+              ref: newRef,
+              type: type.replace('_', ' ').toUpperCase(),
+              desc: desc || "Emergency assistance requested.",
+              status: "SUBMITTED",
+              lat: currentCoords ? currentCoords.lat : 12.9716,
+              lng: currentCoords ? currentCoords.lng : 77.5946,
+              accuracy: currentCoords ? currentCoords.acc : 15,
+              landmark: landmark,
+              medical: includeMed ? "O+ Blood | Allergies: Penicillin, Dust | Salbutamol" : "None consented",
+              timestamp: new Date().toISOString(),
+              acknowledgedBy: null,
+              assignedUnit: null,
+              isDemoMode: false,
+              events: [
+                { status: "SUBMITTED", time: "Just now", desc: "Live CAD emergency alert submitted to cloud dispatch" }
+              ]
+            };
+
+            incidents.unshift(newInc);
+            activeIncidentId = newInc.id;
+            saveIncidents();
+            closeModal('sosModal');
+            openTrackingModal(newInc.id);
+          }).catch(err => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.querySelector('span:first-child').textContent = originalLabel;
+            if (errBox) {
+              errBox.textContent = `Connection Failure: Incident was NOT submitted (${err.message || 'Network error'}). Please dial 112 directly.`;
+              errBox.style.display = 'block';
+            }
+          });
+        } catch (err) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.querySelector('span:first-child').textContent = originalLabel;
+          if (errBox) {
+            errBox.textContent = "Initialization Error: Incident was NOT submitted. Please dial 112 directly.";
+            errBox.style.display = 'block';
+          }
+        }
+      } else {
+        // Truthful Demo Mode
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.querySelector('span:first-child').textContent = originalLabel;
+
+          const newInc = {
+            id: "inc-" + Date.now(),
+            ref: newRef,
+            type: type.replace('_', ' ').toUpperCase(),
+            desc: desc || "Emergency assistance requested (Demo Mode).",
+            status: "SUBMITTED",
+            lat: currentCoords ? currentCoords.lat : 12.9716,
+            lng: currentCoords ? currentCoords.lng : 77.5946,
+            accuracy: currentCoords ? currentCoords.acc : null,
+            isManualLocation: !currentCoords,
+            landmark: landmark,
+            medical: includeMed ? (localStorage.getItem('pb_medical_summary') || "O+ Blood | Allergies: Penicillin, Dust | Salbutamol") : "None consented",
+            timestamp: new Date().toISOString(),
+            acknowledgedBy: null,
+            assignedUnit: null,
+            isDemoMode: true,
+            events: [
+              { status: "SUBMITTED", time: "Just now", desc: "Incident broadcast recorded in local demo storage — not sent to live emergency services" }
+            ]
+          };
+
+          incidents.unshift(newInc);
+          activeIncidentId = newInc.id;
+          saveIncidents();
+          closeModal('sosModal');
+          openTrackingModal(newInc.id);
+        }, 600);
+      }
     }
 
     // Render Tracking Modal View
     function renderTrackingView(id) {
-      const inc = incidents.find(i => i.id === id || i.ref === id) || incidents[0];
+      const inc = incidents.find(i => i.id === id || i.ref.toLowerCase() === (id || '').toLowerCase()) || incidents[0];
       const container = document.getElementById('trackingContent');
       if (!inc) {
-        container.innerHTML = "<div>No active incident found.</div>";
+        container.innerHTML = "<div style='color:#64748b; font-size:13px; text-align:center; padding:24px;'>No incident matching reference found.</div>";
         return;
       }
 
       container.innerHTML = `
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:18px; font-weight:800; color:var(--ink);">${inc.ref}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:18px; font-weight:800; color:var(--ink);">${inc.ref}</span>
+              ${inc.isOfflineDraft ? '<span style="background:#fee2e2; color:#991b1b; font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:4px;">OFFLINE DRAFT</span>' : ''}
+              ${inc.isDemoMode ? '<span style="background:#fef3c7; color:#92400e; font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:4px;">DEMO RECORD</span>' : ''}
+            </div>
             <span class="status-pill pill-${inc.status}">${inc.status}</span>
           </div>
           <div style="font-size:12px; color:#64748b; margin-bottom:12px;">
             ${new Date(inc.timestamp).toLocaleTimeString()} • ${inc.type}
           </div>
           <div style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:8px;">
-            <strong>Landmark:</strong> ${inc.landmark}
+            <strong>Landmark / Location:</strong> ${inc.landmark}
           </div>
-          ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Details:</strong> ${inc.desc}</div>` : ''}
-          <div style="font-size:12px; color:#0284c7; margin-bottom:8px;">
-            📍 Coordinates: ${inc.lat}, ${inc.lng} (±${inc.accuracy}m accuracy)
+          ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Triage Details:</strong> ${inc.desc}</div>` : ''}
+          <div style="font-size:12px; color:#0284c7; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>📍 ${inc.lat && inc.lng ? `Coordinates: ${inc.lat}, ${inc.lng} (±${inc.accuracy || 15}m)` : 'Manual landmark description only'}</span>
+            ${inc.lat && inc.lng ? `<button onclick="closeModal('trackingModal'); openDashboardModal();" style="background:#e0f2fe; color:#0369a1; border:none; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">View on CAD Map</button>` : ''}
           </div>
-          ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600;">🚑 Dispatched: ${inc.assignedUnit}</div>` : ''}
+          ${inc.medical ? `<div style="font-size:12px; color:#15803d; margin-bottom:8px; background:#f0fdf4; padding:6px 10px; border-radius:6px; border:1px solid #bbf7d0;"><strong>Consented Vitals:</strong> ${inc.medical}</div>` : ''}
+          ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600; margin-top:6px;">🚑 Assigned Unit: ${inc.assignedUnit}</div>` : ''}
         </div>
 
         <div>
-          <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px;">Triage Milestones</div>
+          <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px;">Triage Milestones & Audit History</div>
           <div style="display:flex; flex-direction:column; gap:6px;">
             ${inc.events.map(ev => `
-              <div style="font-size:12px; padding:6px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; display:flex; justify-content:space-between;">
+              <div style="font-size:12px; padding:7px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
                 <span><strong>${ev.status}:</strong> ${ev.desc}</span>
-                <span style="color:#64748b;">${ev.time}</span>
+                <span style="color:#64748b; font-size:11px;">${ev.time}</span>
               </div>
             `).join('')}
           </div>
         </div>
 
         ${inc.status === 'SUBMITTED' ? `
-          <button onclick="cancelIncident('${inc.id}')" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:8px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;">
-            Cancel Incident / False Alarm
+          <button onclick="cancelIncident('${inc.id}')" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:10px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            Cancel Incident / Report False Alarm
           </button>
         ` : ''}
       `;
@@ -2001,16 +2210,21 @@
         activeIncidentId = found.id;
         renderTrackingView(found.id);
       } else {
-        alert(`No incident found matching reference code "${q}".`);
+        alert(`No incident found matching reference code "${q}". Please check the ID or report a new alert.`);
       }
     }
 
     function cancelIncident(id) {
-      if (!confirm("Are you sure you want to cancel this incident?")) return;
+      const reason = prompt("Enter cancellation or false alarm reason:", "Accidental trigger / false alarm");
+      if (reason === null) return;
       const inc = incidents.find(i => i.id === id);
       if (inc) {
+        if (inc.status === 'RESOLVED') {
+          alert("Notice: Cannot cancel an incident that has already been resolved.");
+          return;
+        }
         inc.status = 'CANCELLED';
-        inc.events.push({ status: 'CANCELLED', time: 'Just now', desc: 'Cancelled by requester' });
+        inc.events.push({ status: 'CANCELLED', time: 'Just now', desc: `Cancelled by requester: ${reason}` });
         saveIncidents();
       }
     }
