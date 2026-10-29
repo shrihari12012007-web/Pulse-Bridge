@@ -1230,8 +1230,32 @@
               Detect Coordinates
             </button>
           </div>
-          <div id="sosGpsText" style="font-size: 12px; color: #64748b;">
-            Location permission requested on-demand only. Tap 'Detect Coordinates' or provide landmark below.
+          <div id="sosGpsText" style="font-size: 12px; color: #64748b; line-height: 1.4;">
+            Location permission requested on-demand only. Tap 'Detect Coordinates' or enter manual landmark below.
+          </div>
+          <div id="sosGeoLabel" style="display: none; font-size: 11.5px; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; margin-top: 6px;"></div>
+
+          <!-- Manual Coordinates Option (if GPS fails or user has known coordinates) -->
+          <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; color: #64748b;">GPS unavailable or failed?</span>
+              <button type="button" id="btnToggleManualCoords" onclick="toggleManualCoordsInput()" style="background:none; border:none; color:#0284c7; font-size:11px; font-weight:600; cursor:pointer; text-decoration:underline;">
+                + Enter Coordinates Manually
+              </button>
+            </div>
+            <div id="manualCoordsFields" style="display: none; margin-top: 8px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">Latitude (-90 to 90)</label>
+                  <input type="number" step="any" id="sosManualLat" class="form-input" style="padding: 6px 10px; font-size: 12px;" placeholder="e.g. 14.4644" oninput="handleManualCoordsInput()">
+                </div>
+                <div>
+                  <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">Longitude (-180 to 180)</label>
+                  <input type="number" step="any" id="sosManualLng" class="form-input" style="padding: 6px 10px; font-size: 12px;" placeholder="e.g. 75.9218" oninput="handleManualCoordsInput()">
+                </div>
+              </div>
+              <div id="manualCoordsFeedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
+            </div>
           </div>
         </div>
 
@@ -1955,6 +1979,16 @@
       parsedIncidents = null;
     }
     let incidents = parsedIncidents || INITIAL_INCIDENTS;
+
+    // Sanitize any previously saved test incidents where Davangere landmark had hardcoded Bengaluru coordinates
+    incidents.forEach(inc => {
+      if (inc.landmark && inc.landmark.toLowerCase().includes('davangere') && inc.lat === 12.9716 && inc.lng === 77.5946) {
+        inc.lat = null;
+        inc.lng = null;
+        inc.accuracy = null;
+        inc.isManualLocation = true;
+      }
+    });
     let activeIncidentId = incidents[0].id;
     let isSimulatedOffline = false;
     let currentCoords = null;
@@ -1991,18 +2025,205 @@
     }
 
     function openSOSModal() {
+      // Clear coordinate state to eliminate any stale GPS fixes
+      currentCoords = null;
+
       // Clear any prior validation errors
       const errBox = document.getElementById('sosErrorMsg');
       if (errBox) {
         errBox.style.display = 'none';
         errBox.textContent = '';
       }
+
       const geoText = document.getElementById('sosGpsText');
-      if (geoText && !currentCoords) {
-        geoText.textContent = "Location permission requested on-demand only. Tap 'Detect Coordinates' or provide landmark below.";
+      if (geoText) {
+        geoText.textContent = "Location permission requested on-demand only. Tap 'Detect Coordinates' or enter manual landmark below.";
         geoText.style.color = "#64748b";
       }
+
+      const detectBtn = document.getElementById('btnDetectCoords');
+      if (detectBtn) {
+        detectBtn.disabled = false;
+        detectBtn.textContent = "Detect Coordinates";
+      }
+
+      const geoLabel = document.getElementById('sosGeoLabel');
+      if (geoLabel) {
+        geoLabel.style.display = 'none';
+        geoLabel.textContent = '';
+      }
+
+      const manualSection = document.getElementById('manualCoordsFields');
+      const manualToggleBtn = document.getElementById('btnToggleManualCoords');
+      if (manualSection) manualSection.style.display = 'none';
+      if (manualToggleBtn) manualToggleBtn.textContent = '+ Enter Coordinates Manually';
+
+      const manualLat = document.getElementById('sosManualLat');
+      const manualLng = document.getElementById('sosManualLng');
+      const manualFeedback = document.getElementById('manualCoordsFeedback');
+      if (manualLat) manualLat.value = '';
+      if (manualLng) manualLng.value = '';
+      if (manualFeedback) manualFeedback.style.display = 'none';
+
       openModal('sosModal');
+    }
+
+    function toggleManualCoordsInput() {
+      const fields = document.getElementById('manualCoordsFields');
+      const btn = document.getElementById('btnToggleManualCoords');
+      if (fields) {
+        const isHidden = fields.style.display === 'none';
+        fields.style.display = isHidden ? 'block' : 'none';
+        if (btn) btn.textContent = isHidden ? '— Hide Manual Coordinates' : '+ Enter Coordinates Manually';
+      }
+    }
+
+    function handleManualCoordsInput() {
+      const latVal = document.getElementById('sosManualLat').value.trim();
+      const lngVal = document.getElementById('sosManualLng').value.trim();
+      const feedback = document.getElementById('manualCoordsFeedback');
+      const geoPill = document.getElementById('geoIndicator');
+
+      if (!latVal && !lngVal) {
+        currentCoords = null;
+        if (feedback) feedback.style.display = 'none';
+        if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
+        return;
+      }
+
+      const lat = parseFloat(latVal);
+      const lng = parseFloat(lngVal);
+
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        if (feedback) {
+          feedback.textContent = "⚠️ Invalid Latitude. Must be between -90 and 90.";
+          feedback.style.color = "#dc2626";
+          feedback.style.display = 'block';
+        }
+        currentCoords = null;
+        return;
+      }
+
+      if (isNaN(lng) || lng < -180 || lng > 180) {
+        if (feedback) {
+          feedback.textContent = "⚠️ Invalid Longitude. Must be between -180 and 180.";
+          feedback.style.color = "#dc2626";
+          feedback.style.display = 'block';
+        }
+        currentCoords = null;
+        return;
+      }
+
+      // Valid manual coordinates (explicitly unverified, no sensor accuracy)
+      currentCoords = { lat, lng, acc: null, isManual: true };
+      if (feedback) {
+        feedback.textContent = `📍 Manually Specified Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)} (Unverified)`;
+        feedback.style.color = "#0284c7";
+        feedback.style.display = 'block';
+      }
+      if (geoPill) geoPill.textContent = `📍 Manual Coords (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+    }
+
+    // Geolocation Handling (Requested strictly on user action)
+    function acquireLiveLocation() {
+      const geoText = document.getElementById('sosGpsText');
+      const geoPill = document.getElementById('geoIndicator');
+      const detectBtn = document.getElementById('btnDetectCoords');
+      const geoLabel = document.getElementById('sosGeoLabel');
+
+      if (detectBtn) {
+        detectBtn.disabled = true;
+        detectBtn.textContent = "Acquiring...";
+      }
+
+      if (!navigator.geolocation) {
+        if (geoText) {
+          geoText.textContent = "Geolocation is not supported by your browser. Please enter manual coordinates or landmark description below.";
+          geoText.style.color = "#b45309";
+        }
+        if (geoPill) geoPill.textContent = "📍 GPS Unsupported";
+        if (detectBtn) {
+          detectBtn.disabled = false;
+          detectBtn.textContent = "Detect Coordinates";
+        }
+        return;
+      }
+
+      if (geoText) {
+        geoText.textContent = "Querying device GPS sensor with high accuracy (maxAge: 0)...";
+        geoText.style.color = "#0284c7";
+      }
+      if (geoPill) geoPill.textContent = "📍 Acquiring GPS...";
+
+      // Clear any prior coordinate object to ensure freshness
+      currentCoords = null;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = parseFloat(pos.coords.latitude.toFixed(6));
+          const lng = parseFloat(pos.coords.longitude.toFixed(6));
+          const acc = Math.round(pos.coords.accuracy);
+
+          currentCoords = { lat, lng, acc, isManual: false };
+
+          if (geoText) {
+            geoText.innerHTML = `<strong>Verified GPS Fix:</strong> ${lat}, ${lng} <span style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; font-size:11px; font-weight:600;">±${acc}m measured accuracy</span>`;
+            geoText.style.color = "#15803d";
+          }
+          if (geoPill) geoPill.textContent = `📍 GPS Active (±${acc}m)`;
+          if (detectBtn) {
+            detectBtn.disabled = false;
+            detectBtn.textContent = "Re-detect GPS";
+          }
+
+          // Optional reverse geocoding to display detected area separately from landmark
+          if (geoLabel) {
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`, { headers: { 'Accept': 'application/json' } })
+              .then(r => r.json())
+              .then(data => {
+                if (data && data.display_name && currentCoords && currentCoords.lat === lat) {
+                  currentCoords.geoLabel = data.display_name;
+                  geoLabel.style.display = 'block';
+                  geoLabel.textContent = `GPS Detected Area: ${data.display_name}`;
+                }
+              })
+              .catch(() => {
+                // Non-fatal if offline or restricted
+              });
+          }
+        },
+        (err) => {
+          let msg = "Unable to retrieve device location. Please provide a manual landmark description.";
+          if (err.code === 1) { // PERMISSION_DENIED
+            msg = "Location permission was denied. Please allow location access in your browser or enter manual coordinates/landmark below.";
+          } else if (err.code === 2) { // POSITION_UNAVAILABLE
+            msg = "Location signal is unavailable from device satellites/network. Please enter manual coordinates or landmark below.";
+          } else if (err.code === 3) { // TIMEOUT
+            msg = "GPS request timed out. Tap 'Detect Coordinates' to retry or enter manual coordinates/landmark below.";
+          }
+
+          currentCoords = null;
+
+          if (geoText) {
+            geoText.textContent = msg;
+            geoText.style.color = "#dc2626";
+          }
+          if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
+          if (detectBtn) {
+            detectBtn.disabled = false;
+            detectBtn.textContent = "Detect Coordinates";
+          }
+
+          // Automatically suggest manual coordinates section on GPS failure
+          const manualSection = document.getElementById('manualCoordsFields');
+          const manualToggleBtn = document.getElementById('btnToggleManualCoords');
+          if (manualSection && manualSection.style.display === 'none') {
+            manualSection.style.display = 'block';
+            if (manualToggleBtn) manualToggleBtn.textContent = '— Hide Manual Coordinates';
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     }
 
     function openTrackingModal(id) {
@@ -2028,62 +2249,6 @@
 
     function scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Geolocation Handling (Requested strictly on user action)
-    function acquireLiveLocation() {
-      const geoText = document.getElementById('sosGpsText');
-      const geoPill = document.getElementById('geoIndicator');
-      const detectBtn = document.getElementById('btnDetectCoords');
-      if (detectBtn) detectBtn.disabled = true;
-
-      if (!navigator.geolocation) {
-        if (geoText) {
-          geoText.textContent = "Geolocation is not supported by your browser. Please provide manual landmark below.";
-          geoText.style.color = "#b45309";
-        }
-        if (geoPill) geoPill.textContent = "📍 GPS Unsupported";
-        if (detectBtn) detectBtn.disabled = false;
-        return;
-      }
-
-      if (geoText) {
-        geoText.textContent = "Requesting permission & capturing GPS coordinates...";
-        geoText.style.color = "#0284c7";
-      }
-      if (geoPill) geoPill.textContent = "📍 Acquiring GPS...";
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = parseFloat(pos.coords.latitude.toFixed(5));
-          const lng = parseFloat(pos.coords.longitude.toFixed(5));
-          const acc = Math.round(pos.coords.accuracy);
-          currentCoords = { lat, lng, acc, isManual: false };
-          if (geoText) {
-            geoText.textContent = `Verified GPS Fix: ${lat}, ${lng} (±${acc}m accuracy)`;
-            geoText.style.color = "#15803d";
-          }
-          if (geoPill) geoPill.textContent = `📍 GPS Active (±${acc}m)`;
-          if (detectBtn) detectBtn.disabled = false;
-        },
-        (err) => {
-          let msg = "GPS permission denied or unavailable. Manual landmark description required.";
-          if (err.code === 1) {
-            msg = "Location permission was denied. Please enter a manual landmark description.";
-          } else if (err.code === 2) {
-            msg = "Position unavailable from satellite/network. Please enter a manual landmark.";
-          } else if (err.code === 3) {
-            msg = "GPS request timed out. Please enter a manual landmark.";
-          }
-          if (geoText) {
-            geoText.textContent = msg;
-            geoText.style.color = "#dc2626";
-          }
-          if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
-          if (detectBtn) detectBtn.disabled = false;
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
     }
 
     // Toggle Simulated Offline
@@ -2153,6 +2318,8 @@
 
       const newRef = generateIncidentRef();
 
+      const hasCoords = currentCoords && currentCoords.lat !== null && currentCoords.lng !== null && !isNaN(currentCoords.lat) && !isNaN(currentCoords.lng);
+
       // 3. Handle Simulated Offline Network Drop
       if (isSimulatedOffline) {
         setTimeout(() => {
@@ -2167,9 +2334,12 @@
             type: type.replace('_', ' ').toUpperCase(),
             desc: desc || "Emergency SOS broadcast triggered from mobile interface.",
             status: "SUBMITTED",
-            lat: currentCoords ? currentCoords.lat : null,
-            lng: currentCoords ? currentCoords.lng : null,
-            accuracy: currentCoords ? currentCoords.acc : null,
+            lat: hasCoords ? currentCoords.lat : null,
+            lng: hasCoords ? currentCoords.lng : null,
+            accuracy: (hasCoords && !currentCoords.isManual) ? currentCoords.acc : null,
+            isManualLocation: !hasCoords || currentCoords.isManual,
+            isManualCoords: hasCoords && currentCoords.isManual,
+            geoLabel: (hasCoords && currentCoords.geoLabel) ? currentCoords.geoLabel : null,
             landmark: landmark,
             medical: includeMed ? (safeStorageGet('pb_medical_summary') || "O+ Blood | Allergies: Penicillin, Dust | Salbutamol") : "None consented",
             timestamp: new Date().toISOString(),
@@ -2191,6 +2361,7 @@
           drafts.unshift(newInc);
           safeStorageSet('pb_offline_drafts', JSON.stringify(drafts));
 
+          currentCoords = null;
           closeModal('sosModal');
           alert(`⚠️ NETWORK UNAVAILABLE: Alert stored as an OFFLINE DRAFT (${newRef}) on this device. It has NOT reached responders. Please dial official emergency 112 immediately.`);
         }, 500);
@@ -2209,9 +2380,9 @@
             reference_code: newRef,
             incident_type: type,
             description: desc,
-            latitude: currentCoords ? currentCoords.lat : null,
-            longitude: currentCoords ? currentCoords.lng : null,
-            location_accuracy: currentCoords ? currentCoords.acc : null,
+            latitude: hasCoords ? currentCoords.lat : null,
+            longitude: hasCoords ? currentCoords.lng : null,
+            location_accuracy: (hasCoords && !currentCoords.isManual) ? currentCoords.acc : null,
             location_description: landmark,
             status: 'SUBMITTED',
             consented_medical_summary: includeMed ? { blood_group: 'O+', allergies: 'Penicillin, Dust', medications: 'Salbutamol' } : null
@@ -2236,9 +2407,12 @@
               type: type.replace('_', ' ').toUpperCase(),
               desc: desc || "Emergency assistance requested.",
               status: "SUBMITTED",
-              lat: currentCoords ? currentCoords.lat : 12.9716,
-              lng: currentCoords ? currentCoords.lng : 77.5946,
-              accuracy: currentCoords ? currentCoords.acc : 15,
+              lat: hasCoords ? currentCoords.lat : null,
+              lng: hasCoords ? currentCoords.lng : null,
+              accuracy: (hasCoords && !currentCoords.isManual) ? currentCoords.acc : null,
+              isManualLocation: !hasCoords || currentCoords.isManual,
+              isManualCoords: hasCoords && currentCoords.isManual,
+              geoLabel: (hasCoords && currentCoords.geoLabel) ? currentCoords.geoLabel : null,
               landmark: landmark,
               medical: includeMed ? "O+ Blood | Allergies: Penicillin, Dust | Salbutamol" : "None consented",
               timestamp: new Date().toISOString(),
@@ -2246,13 +2420,14 @@
               assignedUnit: null,
               isDemoMode: false,
               events: [
-                { status: "SUBMITTED", time: "Just now", desc: "Live CAD emergency alert submitted to cloud dispatch" }
+                { status: "SUBMITTED", time: "Just now", desc: hasCoords ? `Live CAD emergency alert submitted with ${currentCoords.isManual ? 'manually entered coordinates' : `measured GPS fix (±${currentCoords.acc}m)`}` : "Live CAD emergency alert submitted with landmark description" }
               ]
             };
 
             incidents.unshift(newInc);
             activeIncidentId = newInc.id;
             saveIncidents();
+            currentCoords = null;
             closeModal('sosModal');
             openTrackingModal(newInc.id);
           }).catch(err => {
@@ -2289,10 +2464,12 @@
             type: type.replace('_', ' ').toUpperCase(),
             desc: desc || "Emergency assistance requested (Demo Mode).",
             status: "SUBMITTED",
-            lat: currentCoords ? currentCoords.lat : 12.9716,
-            lng: currentCoords ? currentCoords.lng : 77.5946,
-            accuracy: currentCoords ? currentCoords.acc : null,
-            isManualLocation: !currentCoords,
+            lat: hasCoords ? currentCoords.lat : null,
+            lng: hasCoords ? currentCoords.lng : null,
+            accuracy: (hasCoords && !currentCoords.isManual) ? currentCoords.acc : null,
+            isManualLocation: !hasCoords || currentCoords.isManual,
+            isManualCoords: hasCoords && currentCoords.isManual,
+            geoLabel: (hasCoords && currentCoords.geoLabel) ? currentCoords.geoLabel : null,
             landmark: landmark,
             medical: includeMed ? (safeStorageGet('pb_medical_summary') || "O+ Blood | Allergies: Penicillin, Dust | Salbutamol") : "None consented",
             timestamp: new Date().toISOString(),
@@ -2300,13 +2477,14 @@
             assignedUnit: null,
             isDemoMode: true,
             events: [
-              { status: "SUBMITTED", time: "Just now", desc: "Incident broadcast recorded in local demo storage — not sent to live emergency services" }
+              { status: "SUBMITTED", time: "Just now", desc: hasCoords ? `Incident broadcast recorded with ${currentCoords.isManual ? 'manually entered coordinates' : `measured GPS fix (±${currentCoords.acc}m)`}` : "Incident broadcast recorded with manual landmark description (No GPS fix)" }
             ]
           };
 
           incidents.unshift(newInc);
           activeIncidentId = newInc.id;
           saveIncidents();
+          currentCoords = null;
           closeModal('sosModal');
           openTrackingModal(newInc.id);
         }, 600);
@@ -2386,12 +2564,38 @@
             Reported ${new Date(inc.timestamp).toLocaleTimeString()} • <strong>${inc.type}</strong>
           </div>
           <div style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:8px;">
-            <strong>Landmark / Location:</strong> ${inc.landmark}
+            <strong>Reported Landmark:</strong> ${inc.landmark}
+            ${(!inc.lat || !inc.lng) ? '<span style="font-size:10px; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:6px;">UNVERIFIED LANDMARK (NO GPS FIX)</span>' : ''}
           </div>
           ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Triage Notes:</strong> ${inc.desc}</div>` : ''}
-          <div style="font-size:12px; color:#0284c7; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-            <span>📍 ${inc.lat && inc.lng ? `Coordinates: ${inc.lat}, ${inc.lng} (±${inc.accuracy || 15}m)` : 'Manual landmark description only'}</span>
-            ${inc.lat && inc.lng ? `<button onclick="closeModal('trackingModal'); openDashboardModal();" style="background:#e0f2fe; color:#0369a1; border:none; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">View on CAD Map</button>` : ''}
+
+          <!-- Location Telemetry Verification Box -->
+          <div style="margin-bottom:8px;">
+            ${(inc.lat !== null && inc.lng !== null && !isNaN(inc.lat) && !isNaN(inc.lng)) ? `
+              <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:9px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:12px; font-weight:700; color:#0369a1;">
+                    📍 ${inc.accuracy !== null && inc.accuracy !== undefined ? 'Verified Sensor GPS Fix' : 'Manually Specified Coordinates (Unverified)'}
+                  </div>
+                  <div style="font-family:monospace; font-size:12px; color:#0284c7; margin-top:2px;">
+                    ${inc.lat.toFixed(5)}, ${inc.lng.toFixed(5)} ${inc.accuracy !== null && inc.accuracy !== undefined ? `<span style="font-family:inherit; font-weight:600; font-size:11px; color:#0369a1;">(measured accuracy: ±${inc.accuracy}m)</span>` : ''}
+                  </div>
+                  ${inc.geoLabel ? `<div style="font-size:11px; color:#0c4a6e; margin-top:2px;">Area: ${inc.geoLabel}</div>` : ''}
+                </div>
+                <button onclick="viewIncidentOnMap('${inc.id}')" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; flex-shrink:0;">
+                  View on CAD Map
+                </button>
+              </div>
+            ` : `
+              <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:9px 12px; font-size:12px; color:#92400e;">
+                <div style="font-weight:700; display:flex; align-items:center; gap:4px;">
+                  <span>📍 No GPS Fix Recorded</span>
+                </div>
+                <div style="font-size:11.5px; margin-top:2px;">
+                  Coordinates are not fabricated. Responders will locate caller using landmark description above.
+                </div>
+              </div>
+            `}
           </div>
           ${medicalSummaryHtml}
           ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600; margin-top:4px;">🚑 Assigned Unit: ${inc.assignedUnit}</div>` : ''}
@@ -2469,6 +2673,12 @@
         inc.events.push({ status: 'CANCELLED', time: 'Just now', desc: `Cancelled by requester: ${reason}` });
         saveIncidents();
       }
+    }
+
+    function viewIncidentOnMap(id) {
+      closeModal('trackingModal');
+      activeIncidentId = id;
+      openDashboardModal();
     }
 
     // Responder CAD Actions
@@ -2561,7 +2771,11 @@
               ${inc.isDemoMode ? '<span style="background:#78350f; color:#fef3c7; font-size:9.5px; padding:1px 5px; border-radius:3px; font-weight:700;">DEMO</span>' : ''}
             </div>
             <div style="font-size:11.5px; color:#cbd5e1; margin-top:3px;">
-              ${inc.landmark} • <span style="color:#38bdf8;">${inc.lat && inc.lng ? `${inc.lat}, ${inc.lng}` : 'Manual landmark'}</span>
+              <strong>Landmark:</strong> ${inc.landmark} • ${
+                inc.lat !== null && inc.lng !== null
+                  ? `<span style="color:#38bdf8; font-weight:600;">GPS: ${inc.lat.toFixed(5)}, ${inc.lng.toFixed(5)}${inc.accuracy !== null ? ` (±${inc.accuracy}m)` : ' (manual coords)'}</span>`
+                  : '<span style="color:#f59e0b;">No GPS fix (Caller landmark only)</span>'
+              }
             </div>
             ${inc.assignedUnit ? `<div style="font-size:11px; color:#c084fc; margin-top:2px;">🚑 Unit: ${inc.assignedUnit}</div>` : ''}
           </div>
@@ -2646,13 +2860,29 @@
       const mapDiv = document.getElementById('incidentMapContainer');
       if (!mapDiv || typeof L === 'undefined') return;
 
+      const geoIncidents = incidents.filter(i => i.lat !== null && i.lng !== null && !isNaN(i.lat) && !isNaN(i.lng));
+      const activeInc = incidents.find(i => i.id === activeIncidentId);
+
+      // Center selection: active incident has highest priority, then first geo-incident, then pan-India fallback
+      let centerTarget = [20.5937, 78.9629];
+      let zoomTarget = 5;
+
+      if (activeInc && activeInc.lat !== null && activeInc.lng !== null) {
+        centerTarget = [activeInc.lat, activeInc.lng];
+        zoomTarget = 14;
+      } else if (geoIncidents.length > 0) {
+        centerTarget = [geoIncidents[0].lat, geoIncidents[0].lng];
+        zoomTarget = 13;
+      }
+
       if (!leafletMap) {
-        leafletMap = L.map('incidentMapContainer').setView([12.9716, 77.5946], 13);
+        leafletMap = L.map('incidentMapContainer').setView(centerTarget, zoomTarget);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap contributors'
         }).addTo(leafletMap);
         leafletMarkerGroup = L.layerGroup().addTo(leafletMap);
       } else {
+        leafletMap.setView(centerTarget, zoomTarget);
         leafletMap.invalidateSize();
       }
 
@@ -2660,20 +2890,39 @@
         leafletMarkerGroup.clearLayers();
       }
 
-      // Add fresh markers for active coordinate points
-      incidents.forEach(inc => {
-        if (inc.lat && inc.lng && leafletMarkerGroup) {
+      let activeMarker = null;
+
+      // Add markers strictly for incidents with genuine coordinates
+      geoIncidents.forEach(inc => {
+        if (leafletMarkerGroup) {
+          const accText = inc.accuracy !== null && inc.accuracy !== undefined
+            ? `<div style="color:#0284c7; font-size:11px; margin-top:2px;">Measured Accuracy: ±${inc.accuracy}m</div>`
+            : `<div style="color:#b45309; font-size:11px; margin-top:2px;">Manually Specified Coordinates</div>`;
+
           const m = L.marker([inc.lat, inc.lng])
             .addTo(leafletMarkerGroup)
             .bindPopup(`
-              <div style="font-family:inherit; font-size:12px;">
-                <strong>${inc.ref}</strong> (${inc.status})<br>
-                <span>${inc.landmark}</span><br>
-                <span style="font-size:11px; color:#64748b;">${inc.type}</span>
+              <div style="font-family:inherit; font-size:12px; min-width:180px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <strong style="font-size:13px;">${inc.ref}</strong>
+                  <span style="font-size:10px; font-weight:700; background:#e2e8f0; color:#334155; padding:1px 5px; border-radius:3px;">${inc.status}</span>
+                </div>
+                <div style="font-size:12px; color:#1e293b; margin-bottom:3px;"><strong>Landmark:</strong> ${inc.landmark}</div>
+                <div style="font-family:monospace; font-size:11px; color:#475569;">GPS: ${inc.lat.toFixed(5)}, ${inc.lng.toFixed(5)}</div>
+                ${accText}
+                <div style="font-size:10.5px; color:#64748b; margin-top:4px;">${inc.type}</div>
               </div>
             `);
+
+          if (activeInc && activeInc.id === inc.id) {
+            activeMarker = m;
+          }
         }
       });
+
+      if (activeMarker) {
+        setTimeout(() => activeMarker.openPopup(), 250);
+      }
     }
 
     // Consented Medical Profile & Contacts Handling

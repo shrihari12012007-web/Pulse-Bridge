@@ -61,8 +61,8 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
   zoomLevel = 13,
   height = '420px',
 }) => {
-  // Default to Bangalore center or first incident with valid coords
-  const defaultCoords: [number, number] = centerCoords || [12.9716, 77.5946]
+  // Default center if no incidents or specified coords exist
+  const defaultCoords: [number, number] = centerCoords || [20.5937, 78.9629]
 
   // Filter incidents that have valid lat/lng
   const incidentsWithGeo = incidents.filter(

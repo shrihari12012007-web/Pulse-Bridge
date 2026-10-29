@@ -44,7 +44,7 @@ export function getCurrentCoordinates(options?: PositionOptions): Promise<GetLoc
     const defaultOptions: PositionOptions = {
       enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 30000,
+      maximumAge: 0,
       ...options,
     }
 
