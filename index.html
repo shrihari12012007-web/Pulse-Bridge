@@ -1215,16 +1215,23 @@
           <div class="modal-title">Live Incident Tracking</div>
           <div style="font-size: 12px; color: #64748b;">Telemetry verification & responder dispatch updates</div>
         </div>
-        <button class="modal-close" onclick="closeModal('trackingModal')">&times;</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button onclick="refreshActiveTracking()" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 600; color: #0284c7; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span id="trackingSyncStatus">Refresh</span>
+          </button>
+          <button class="modal-close" onclick="closeModal('trackingModal')">&times;</button>
+        </div>
       </div>
 
       <!-- Quick lookup input -->
-      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-        <input type="text" id="trackSearchInput" class="form-input" placeholder="Search Ref ID (e.g. PB-901)" style="flex:1;">
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="trackSearchInput" class="form-input" placeholder="Search Ref ID (e.g. PB-901 or PB-XXXXXX)" style="flex:1;">
         <button onclick="handleTrackingSearch()" style="padding: 0 16px; border-radius: 10px; background: var(--ink); color:#fff; border:none; font-weight:600; cursor:pointer;">
           Search
         </button>
       </div>
+      <div id="trackSearchError" style="display: none; background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;"></div>
 
       <!-- Incident Record Card -->
       <div id="trackingContent" style="display: flex; flex-direction: column; gap: 14px;">
@@ -2147,7 +2154,7 @@
       }
     }
 
-    // Render Tracking Modal View
+    // Render Tracking Modal View with Progress Stepper, Privacy Redaction, and Audit History
     function renderTrackingView(id) {
       const inc = incidents.find(i => i.id === id || i.ref.toLowerCase() === (id || '').toLowerCase()) || incidents[0];
       const container = document.getElementById('trackingContent');
@@ -2156,29 +2163,79 @@
         return;
       }
 
+      const isResponder = PERSONAS[personaIndex].role === 'responder';
+      const isCancelled = inc.status === 'CANCELLED';
+
+      // Milestone step calculation
+      const stepOrder = ['SUBMITTED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESOLVED'];
+      const currentStepIdx = stepOrder.indexOf(inc.status);
+
+      const stepperHtml = isCancelled ? `
+        <div style="background:#fef2f2; border:1px solid #fee2e2; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">🛑</span>
+          <div>
+            <strong style="color:#b91c1c; font-size:12.5px;">Incident Terminated: CANCELLED</strong>
+            <div style="font-size:11.5px; color:#991b1b;">Reported as false alarm or resolved prior to unit arrival.</div>
+          </div>
+        </div>
+      ` : `
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; margin-bottom:14px; position:relative;">
+          ${stepOrder.map((step, idx) => {
+            const isDone = currentStepIdx >= idx;
+            const isCurrent = currentStepIdx === idx;
+            const stepColor = isDone ? (isCurrent ? '#0284c7' : '#16a34a') : '#cbd5e1';
+            return `
+              <div style="text-align:center;">
+                <div style="height:4px; border-radius:2px; background:${stepColor}; margin-bottom:6px;"></div>
+                <div style="font-size:10px; font-weight:${isCurrent ? '800' : '600'}; color:${isDone ? '#0f172a' : '#94a3b8'};">
+                  ${step}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      // Privacy: Redact sensitive medical profile details if viewer is citizen/unauthorized
+      const medicalSummaryHtml = inc.medical ? (
+        isResponder ? `
+          <div style="font-size:12px; color:#15803d; margin-bottom:8px; background:#f0fdf4; padding:8px 12px; border-radius:8px; border:1px solid #bbf7d0;">
+            <strong>Consented Vitals (Responder CAD View):</strong> ${inc.medical}
+          </div>
+        ` : `
+          <div style="font-size:11.5px; color:#64748b; margin-bottom:8px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <span>🔒 <strong>Medical Profile:</strong> Consented data protected (Authorized responders only)</span>
+            <span style="color:#0284c7; cursor:pointer; font-weight:600;" onclick="cyclePersona()">Switch Role</span>
+          </div>
+        `
+      ) : '';
+
       container.innerHTML = `
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:18px; font-weight:800; color:var(--ink);">${inc.ref}</span>
-              ${inc.isOfflineDraft ? '<span style="background:#fee2e2; color:#991b1b; font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:4px;">OFFLINE DRAFT</span>' : ''}
-              ${inc.isDemoMode ? '<span style="background:#fef3c7; color:#92400e; font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:4px;">DEMO RECORD</span>' : ''}
+              ${inc.isOfflineDraft ? '<span style="background:#fee2e2; color:#991b1b; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">OFFLINE DRAFT</span>' : ''}
+              ${inc.isDemoMode ? '<span style="background:#fef3c7; color:#92400e; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">DEMO RECORD</span>' : ''}
             </div>
             <span class="status-pill pill-${inc.status}">${inc.status}</span>
           </div>
-          <div style="font-size:12px; color:#64748b; margin-bottom:12px;">
-            ${new Date(inc.timestamp).toLocaleTimeString()} • ${inc.type}
+
+          ${stepperHtml}
+
+          <div style="font-size:12px; color:#64748b; margin-bottom:10px;">
+            Reported ${new Date(inc.timestamp).toLocaleTimeString()} • <strong>${inc.type}</strong>
           </div>
           <div style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:8px;">
             <strong>Landmark / Location:</strong> ${inc.landmark}
           </div>
-          ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Triage Details:</strong> ${inc.desc}</div>` : ''}
+          ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Triage Notes:</strong> ${inc.desc}</div>` : ''}
           <div style="font-size:12px; color:#0284c7; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <span>📍 ${inc.lat && inc.lng ? `Coordinates: ${inc.lat}, ${inc.lng} (±${inc.accuracy || 15}m)` : 'Manual landmark description only'}</span>
             ${inc.lat && inc.lng ? `<button onclick="closeModal('trackingModal'); openDashboardModal();" style="background:#e0f2fe; color:#0369a1; border:none; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">View on CAD Map</button>` : ''}
           </div>
-          ${inc.medical ? `<div style="font-size:12px; color:#15803d; margin-bottom:8px; background:#f0fdf4; padding:6px 10px; border-radius:6px; border:1px solid #bbf7d0;"><strong>Consented Vitals:</strong> ${inc.medical}</div>` : ''}
-          ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600; margin-top:6px;">🚑 Assigned Unit: ${inc.assignedUnit}</div>` : ''}
+          ${medicalSummaryHtml}
+          ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600; margin-top:4px;">🚑 Assigned Unit: ${inc.assignedUnit}</div>` : ''}
         </div>
 
         <div>
@@ -2202,15 +2259,41 @@
       `;
     }
 
+    function refreshActiveTracking() {
+      const syncStatus = document.getElementById('trackingSyncStatus');
+      if (syncStatus) syncStatus.textContent = "Syncing...";
+      setTimeout(() => {
+        renderTrackingView(activeIncidentId);
+        if (syncStatus) syncStatus.textContent = "Synced";
+        setTimeout(() => {
+          if (syncStatus) syncStatus.textContent = "Refresh";
+        }, 1500);
+      }, 350);
+    }
+
     function handleTrackingSearch() {
       const q = document.getElementById('trackSearchInput').value.trim();
-      if (!q) return;
+      const errBox = document.getElementById('trackSearchError');
+      if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
+      }
+      if (!q) {
+        if (errBox) {
+          errBox.textContent = "Please enter an incident Reference Code (e.g. PB-901 or PB-XXXXXX).";
+          errBox.style.display = 'block';
+        }
+        return;
+      }
       const found = incidents.find(i => i.ref.toLowerCase() === q.toLowerCase() || i.id === q);
       if (found) {
         activeIncidentId = found.id;
         renderTrackingView(found.id);
       } else {
-        alert(`No incident found matching reference code "${q}". Please check the ID or report a new alert.`);
+        if (errBox) {
+          errBox.textContent = `No incident found matching reference code "${q}". Please check the ID or broadcast a new alert.`;
+          errBox.style.display = 'block';
+        }
       }
     }
 
