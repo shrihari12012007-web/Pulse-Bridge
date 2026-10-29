@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.GITHUB_PAGES === 'true' ? '/pulsebridge/' : '/',
+  base: process.env.GITHUB_PAGES === 'true' ? '/Pulse-Bridge/' : '/',
   test: {
     globals: true,
     environment: 'jsdom',

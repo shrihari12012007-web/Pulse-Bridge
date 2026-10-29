@@ -4,7 +4,7 @@
 > **Problem Statement:** H4 — Emergency Health Assistance  
 > **Theme:** Building intelligent solutions for a smarter, sustainable and secure tomorrow.
 
-[![PulseBridge CI/CD](https://github.com/shrihari12012007-web/pulsebridge/actions/workflows/deploy.yml/badge.svg)](https://github.com/shrihari12012007-web/pulsebridge/actions/workflows/deploy.yml)
+[![PulseBridge CI/CD](https://github.com/shrihari12012007-web/Pulse-Bridge/actions/workflows/deploy.yml/badge.svg)](https://github.com/shrihari12012007-web/Pulse-Bridge/actions/workflows/deploy.yml)
 [![Deployed on Render](https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render&logoColor=white)](https://render.com)
 [![Node.js Version](https://img.shields.io/badge/Node.js-v20%2B-brightgreen)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -358,6 +358,6 @@ If you prefer running a Node.js web server:
 - **Problem Statement:** H4 — Emergency Health Assistance
 - **Theme:** Building intelligent solutions for a smarter, sustainable and secure tomorrow.
 - **Project Name:** PulseBridge — Emergency Response Coordination
-- **Repository:** [https://github.com/shrihari12012007-web/pulsebridge](https://github.com/shrihari12012007-web/pulsebridge)
+- **Repository:** [https://github.com/shrihari12012007-web/Pulse-Bridge](https://github.com/shrihari12012007-web/Pulse-Bridge)
 
 *PulseBridge — Connecting citizens in crisis with immediate, intelligent assistance.*
