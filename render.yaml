@@ -1,11 +1,7 @@
-# ==============================================================================
-# Render Blueprint Specification for PulseBridge
-# Free Tier Static Site with Instant Global CDN and SPA Routing
-# ==============================================================================
-
 services:
-  - type: static
+  - type: web
     name: pulse-bridge
+    env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
@@ -17,8 +13,6 @@ services:
         name: X-Frame-Options
         value: SAMEORIGIN
     envVars:
-      - key: NODE_VERSION
-        value: 22
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
