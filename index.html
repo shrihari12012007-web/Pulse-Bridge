@@ -522,9 +522,6 @@
       position: sticky;
       top: 0;
       height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     #stmt {
@@ -534,8 +531,8 @@
       right: 0;
       text-align: center;
       font-weight: 400;
-      font-size: clamp(20px, 2.75vw, 42px);
-      line-height: 1.18;
+      font-size: clamp(20px, 2.8vw, 42px);
+      line-height: 1.16;
       letter-spacing: -0.03em;
       color: var(--ink);
       white-space: nowrap;
@@ -1096,7 +1093,7 @@
     <!-- Scene 2: Statement (Pinned Scroll) -->
     <section class="statement" id="statement">
       <div class="pin">
-        <p id="stmt">PulseBridge connects citizens to responders<br> that triages incidents, streams live GPS, verifies triage,<br> coordinates medical aid, notifies contacts and does anything<br> in between to keep an emergency response moving</p>
+        <p id="stmt">PulseBridge is an AI response teammate<br> that streams telemetry, locks GPS, triages vitals,<br> coordinates medics, alerts teams and does anything<br> in between to keep an emergency response moving</p>
       </div>
     </section>
 
@@ -1524,7 +1521,7 @@
           const sub = (t - 0.70) / 0.30;
           opacity = 1;
           blur = 0;
-          const target = item.isHl ? [220, 38, 38] : finalColor; // Accent highlights
+          const target = item.isHl ? COLOR_HL : finalColor; // Brand highlight for .hl
           col = lerpColor(accentColor, target, sub);
         }
 
@@ -1536,7 +1533,8 @@
 
     const COLOR_WHITE = [255, 255, 255];
     const COLOR_NAVY = [11, 29, 58];
-    const COLOR_ACCENT = [220, 38, 38];     // Pulse emergency accent
+    const COLOR_REVEAL_ACCENT = [63, 124, 255]; // #3f7cff Motion sky-blue reveal accent (white -> blue -> navy)
+    const COLOR_HL = [220, 38, 38];             // Pulse emergency accent for highlighted word
     const COLOR_DARK_GHOST = [92, 111, 146];
     const COLOR_DARK_ACCENT = [143, 230, 244];
 
@@ -1544,8 +1542,8 @@
     const stmtChars = splitText(document.getElementById('stmt'));
     const h2Chars = splitText(document.getElementById('h2'));
 
-    paint(h1Chars, 0, 0.35, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
-    paint(stmtChars, 0, 0.16, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
+    paint(h1Chars, 0, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+    paint(stmtChars, 0, 0.16, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
     paint(h2Chars, 0, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
 
     /* ==========================================================================
@@ -1723,7 +1721,7 @@
       stmt.style.transform = 'translateY(' + translateY.toFixed(2) + 'px)';
 
       const pStmt = Math.max(0, Math.min(1, (q - 0.56) / 2.03));
-      paint(stmtChars, pStmt, 0.16, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
+      paint(stmtChars, pStmt, 0.16, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
 
       if (pStmt > 0.4) {
         nav.classList.add('on');
@@ -2592,7 +2590,7 @@
       function animateH1(now) {
         const elapsed = (now - h1Start) / 1250;
         const p = Math.max(0, Math.min(1, elapsed));
-        paint(h1Chars, p, 0.35, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
+        paint(h1Chars, p, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
         if (p < 1) {
           requestAnimationFrame(animateH1);
         }
