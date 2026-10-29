@@ -4,7 +4,8 @@
 > **Problem Statement:** H4 — Emergency Health Assistance  
 > **Theme:** Building intelligent solutions for a smarter, sustainable and secure tomorrow.
 
-[![PulseBridge CI/CD](https://github.com/ShreehariSB/pulsebridge/actions/workflows/deploy.yml/badge.svg)](https://github.com/ShreehariSB/pulsebridge/actions/workflows/deploy.yml)
+[![PulseBridge CI/CD](https://github.com/shrihari12012007-web/pulsebridge/actions/workflows/deploy.yml/badge.svg)](https://github.com/shrihari12012007-web/pulsebridge/actions/workflows/deploy.yml)
+[![Deployed on Render](https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render&logoColor=white)](https://render.com)
 [![Node.js Version](https://img.shields.io/badge/Node.js-v20%2B-brightgreen)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -249,36 +250,69 @@ npm run build
 
 ## 11. GitHub Repository Setup & GitHub Pages Deployment
 
-### Step 1: Initialize Git and Push to GitHub
+### Step 1: Create the Repository on GitHub
+1. Open [https://github.com/new](https://github.com/new) in your browser.
+2. Under **Repository name**, enter: `pulsebridge`
+3. Leave it as **Public** (or **Private**). Do **not** check "Initialize this repository with a README" (the local repo already has full documentation and history).
+4. Click **Create repository**.
+
+### Step 2: Push Local Code to GitHub
+Run the following in PowerShell:
 
 ```powershell
 cd "C:\Users\Shree hari S B\.gemini\antigravity\scratch\pulsebridge"
-git init
-git add .
-git commit -m "Initial release: PulseBridge Emergency Response Coordination (BUILDATHON 2.0)"
-git branch -M main
-git remote add origin https://github.com/<your-username>/pulsebridge.git
 git push -u origin main
 ```
 
-### Step 2: Configure GitHub Pages Settings
-1. Go to your repository on GitHub: `https://github.com/<your-username>/pulsebridge/settings/pages`.
+If prompted by the Windows Git Credential Manager, complete the sign-in with your GitHub account (`shrihari12012007-web`).
+
+### Step 3: Configure GitHub Pages Settings
+1. Go to your repository on GitHub: `https://github.com/shrihari12012007-web/pulsebridge/settings/pages`.
 2. Under **Build and deployment** &rarr; **Source**, select **GitHub Actions**.
 3. Push to `main` branch or trigger the workflow manually under the **Actions** tab.
 4. The workflow will run tests, build the application with base path `/pulsebridge/`, and deploy to:
-   `https://<your-username>.github.io/pulsebridge/`
-
-### Step 3: Optional Supabase Secrets in GitHub Actions
-If you wish to build with your live Supabase database connected on GitHub Pages:
-1. Go to **Settings** &rarr; **Secrets and variables** &rarr; **Actions** &rarr; **Variables**.
-2. Add:
-   - `VITE_SUPABASE_URL`: Your Supabase project URL.
-   - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous public key.
-3. Re-run the deploy workflow.
+   `https://shrihari12012007-web.github.io/pulsebridge/`
 
 ---
 
-## 12. Security, Privacy & Compliance
+## 12. Deploying on Render (Render.com)
+
+PulseBridge is fully configured for zero-friction deployment on [Render](https://render.com).
+
+### Method A: 1-Click Render Blueprint (Recommended)
+1. Sign in to your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** in the top navigation bar &rarr; select **Blueprint**.
+3. Connect your GitHub account and choose `shrihari12012007-web/pulsebridge`.
+4. Render automatically reads `render.yaml` from the repository root:
+   - Configures the build command: `npm install && npm run build`
+   - Configures the static output: `./dist`
+   - Configures the SPA rewrite rule: `/*` &rarr; `/index.html`
+5. Click **Apply**. Your app will build and go live at `https://pulsebridge-static.onrender.com`.
+
+### Method B: Render Static Site (Manual GUI Setup)
+1. In the Render Dashboard, click **New +** &rarr; **Static Site**.
+2. Select your repository: `shrihari12012007-web/pulsebridge`.
+3. Fill in the fields:
+   - **Name:** `pulsebridge`
+   - **Branch:** `main`
+   - **Build Command:** `npm install && npm run build`
+   - **Publish Directory:** `./dist`
+4. Under **Redirects/Rewrites**:
+   - **Type:** `Rewrite`
+   - **Source:** `/*`
+   - **Destination:** `/index.html`
+5. (Optional) Under **Environment Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` if using a live database.
+6. Click **Create Static Site**.
+
+### Method C: Render Web Service (Node.js Production Server)
+If you prefer running a Node.js web server:
+- **Runtime:** `Node`
+- **Build Command:** `npm install && npm run build`
+- **Start Command:** `npm start` (Runs built-in production `server.js` binding to `0.0.0.0:$PORT`)
+
+---
+
+## 13. Security, Privacy & Compliance
 
 - **Principle of Least Privilege:** Medical profiles are kept strictly isolated. Responders only view an immutable snapshot consented at the time of incident creation.
 - **Row Level Security (RLS):** All Supabase tables have RLS policies enabled. Unauthenticated users cannot read private medical records.
@@ -324,6 +358,6 @@ If you wish to build with your live Supabase database connected on GitHub Pages:
 - **Problem Statement:** H4 — Emergency Health Assistance
 - **Theme:** Building intelligent solutions for a smarter, sustainable and secure tomorrow.
 - **Project Name:** PulseBridge — Emergency Response Coordination
-- **Repository:** [https://github.com/ShreehariSB/pulsebridge](https://github.com/ShreehariSB/pulsebridge)
+- **Repository:** [https://github.com/shrihari12012007-web/pulsebridge](https://github.com/shrihari12012007-web/pulsebridge)
 
 *PulseBridge — Connecting citizens in crisis with immediate, intelligent assistance.*
