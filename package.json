@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node -e \"import('node:fs').then(fs => { if (!fs.existsSync('dist')) fs.mkdirSync('dist'); fs.copyFileSync('index.html', 'dist/index.html'); console.log('Built dist/index.html successfully'); })\"",
+    "build": "node -e \"import('node:fs').then(fs => { if (!fs.existsSync('dist')) fs.mkdirSync('dist'); fs.copyFileSync('index.html', 'dist/index.html'); if (fs.existsSync('.nojekyll')) fs.copyFileSync('.nojekyll', 'dist/.nojekyll'); console.log('Built dist/index.html successfully'); })\"",
     "lint": "oxlint",
     "preview": "vite preview",
     "start": "node server.js",

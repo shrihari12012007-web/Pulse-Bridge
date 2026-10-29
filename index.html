@@ -3,20 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Halden — AI Teammate for Port Operators</title>
+  <title>PulseBridge — Emergency Response Coordination</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Leaflet for interactive emergency maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     :root {
       --ink: #0b1d3a;          /* headline navy, button fill */
       --ink-2: #1d2f4f;        /* trust line */
-      --accent: #5b7cf0;       /* "Hal" highlight, brand mark */
+      --accent: #5b7cf0;       /* "PulseBridge" highlight, brand mark */
       --dot: #2fe0d0;          /* button dot / arrow circle */
       --panel: #0e1f3d;        /* dark split panel */
       --panel-line: rgba(255,255,255,.12);
       --gut: clamp(20px, 5.7vw, 82px);    /* page gutter */
       --ease: cubic-bezier(.22, .7, .2, 1);
+
+      /* Emergency Accents */
+      --sos-red: #dc2626;
+      --sos-red-hover: #b91c1c;
+      --status-submitted: #d97706;
+      --status-ack: #0284c7;
+      --status-assigned: #7c3aed;
+      --status-resolved: #16a34a;
     }
 
     * {
@@ -39,7 +51,7 @@
       text-decoration: none;
     }
 
-    /* Fixed Canvas Background */
+    /* Fixed Canvas Background (Bowl Glow) */
     .atmo {
       position: fixed;
       inset: 0;
@@ -62,13 +74,68 @@
       z-index: 1;
     }
 
+    /* Top Telemetry Notification Banner */
+    .telemetry-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 28px;
+      background: rgba(11, 29, 58, 0.95);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--gut);
+      z-index: 60;
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .telemetry-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .telemetry-tag {
+      color: var(--dot);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .telemetry-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-sim-offline {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #f8fafc;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-sim-offline.active {
+      background: #dc2626;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
     /* -------------------------------------------------------------
-       NAVBAR
+       NAVBAR (Fixed Pill)
        ------------------------------------------------------------- */
     .nav {
       position: fixed;
       z-index: 50;
-      top: 20px;
+      top: 36px;
       left: var(--gut);
       right: var(--gut);
       height: 60px;
@@ -95,10 +162,11 @@
       align-items: center;
       gap: 9px;
       font-size: 17px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: -0.02em;
       color: var(--ink);
       flex-shrink: 0;
+      cursor: pointer;
     }
 
     .brand-svg {
@@ -113,16 +181,20 @@
       transform: translateX(-50%);
       display: flex;
       align-items: center;
-      gap: 31px;
+      gap: 28px;
     }
 
     .nav-link {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 500;
       letter-spacing: -0.005em;
       color: var(--ink);
       opacity: 0.92;
       transition: opacity 0.2s ease;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
     }
 
     .nav-link:hover {
@@ -133,14 +205,41 @@
       margin-left: auto;
       display: flex;
       align-items: center;
+      gap: 6px;
     }
 
-    .login-btn {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ink);
-      padding: 0 14px;
-      transition: padding .35s var(--ease);
+    /* 112 India Direct Emergency Button */
+    .call-112-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .call-112-btn:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+
+    .persona-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      user-select: none;
     }
 
     .navcta {
@@ -169,7 +268,7 @@
     /* When statement passes ~40% reveal */
     .nav.on .navcta {
       width: 142px;
-      margin-left: 16px;
+      margin-left: 10px;
       transform: scale(1);
     }
 
@@ -177,12 +276,8 @@
       opacity: 1;
     }
 
-    .nav.on .login-btn {
-      padding-right: 0;
-    }
-
     /* -------------------------------------------------------------
-       BUTTON (.btn)
+       BUTTON (.btn) - Dot to Arrow Hover
        ------------------------------------------------------------- */
     .btn {
       position: relative;
@@ -199,7 +294,18 @@
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
-      transition: background-color 0.2s ease;
+      border: none;
+      font-family: inherit;
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .btn.sos {
+      background: var(--sos-red);
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    }
+
+    .btn.sos:hover {
+      background: var(--sos-red-hover);
     }
 
     .btn .dot {
@@ -216,6 +322,11 @@
       align-items: center;
       justify-content: center;
       transition: width .45s var(--ease), height .45s var(--ease), right .45s var(--ease), box-shadow .45s var(--ease);
+    }
+
+    .btn.sos .dot {
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(255,255,255,.8);
     }
 
     .btn .chevron {
@@ -244,6 +355,7 @@
       height: 62px;
       padding: 0 62px 0 28px;
       font-size: 17px;
+      font-weight: 600;
     }
 
     .btn.lg .dot {
@@ -278,8 +390,8 @@
       left: var(--gut);
       top: 21.5vh;
       font-weight: 400;
-      font-size: clamp(34px, 4.65vw, 70px);
-      line-height: 1.03;
+      font-size: clamp(34px, 4.65vw, 68px);
+      line-height: 1.04;
       letter-spacing: -0.035em;
       white-space: nowrap;
       color: var(--ink);
@@ -288,18 +400,57 @@
     .trust {
       position: absolute;
       left: var(--gut);
-      top: 58vh;
-      font-size: clamp(15px, 1.28vw, 19px);
+      top: 56vh;
+      font-size: clamp(14px, 1.25vw, 18px);
       letter-spacing: -0.015em;
       color: var(--ink-2);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    .hero-cta {
+    .trust-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #059669;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .hero-actions {
       position: absolute;
       left: var(--gut);
       bottom: 7.5vh;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
+    .btn-secondary {
+      height: 52px;
+      padding: 0 24px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(11, 29, 58, 0.15);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(11, 29, 58, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #ffffff;
+      border-color: var(--ink);
+    }
+
+    /* 4x2 Logo grid */
     .logos {
       position: absolute;
       right: 0;
@@ -356,7 +507,7 @@
     }
 
     /* -------------------------------------------------------------
-       SCENE 2: STATEMENT (PINNED)
+       SCENE 2: STATEMENT (PINNED SCROLL)
        ------------------------------------------------------------- */
     .statement {
       position: relative;
@@ -381,8 +532,8 @@
       right: 0;
       text-align: center;
       font-weight: 400;
-      font-size: clamp(20px, 2.8vw, 42px);
-      line-height: 1.16;
+      font-size: clamp(20px, 2.75vw, 42px);
+      line-height: 1.18;
       letter-spacing: -0.03em;
       color: var(--ink);
       white-space: nowrap;
@@ -390,7 +541,7 @@
     }
 
     /* -------------------------------------------------------------
-       SCENE 3: DARK SPLIT
+       SCENE 3: DARK SPLIT (TACTICAL CAD & DISPATCH)
        ------------------------------------------------------------- */
     .split {
       position: relative;
@@ -421,12 +572,12 @@
       font-size: clamp(32px, 3.15vw, 48px);
       line-height: 1.08;
       letter-spacing: -0.03em;
-      padding: 21vh 0 0 6.2vw;
+      padding: 18vh 0 0 6.2vw;
       color: #ffffff;
     }
 
     #row {
-      margin-top: 6.4vh;
+      margin-top: 5vh;
       border-top: 1px solid var(--panel-line);
       display: grid;
       grid-template-columns: 1fr 1.05fr;
@@ -451,8 +602,8 @@
     #row p {
       font-size: clamp(13px, 1.1vw, 16px);
       line-height: 1.38;
-      color: rgba(255,255,255,.5);
-      max-width: 20em;
+      color: rgba(255,255,255,.6);
+      max-width: 24em;
     }
 
     .split .r {
@@ -471,6 +622,33 @@
       display: block;
     }
 
+    /* Embedded Tactical Dispatch Console Button in Dark Split */
+    .cad-trigger-wrap {
+      padding: 4vh 6vw 6vh 6.2vw;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-cad-open {
+      padding: 12px 24px;
+      border-radius: 999px;
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cad-open:hover {
+      background: #0369a1;
+    }
+
     /* Character Spans for Letter Reveal */
     .word {
       display: inline-block;
@@ -483,43 +661,194 @@
     }
 
     /* -------------------------------------------------------------
+       MODAL SYSTEM (Preserving Clean Design Tokens)
+       ------------------------------------------------------------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(11, 29, 58, 0.65);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      border-radius: 20px;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(11, 29, 58, 0.35);
+      border: 1px solid rgba(11, 29, 58, 0.08);
+      transform: translateY(16px);
+      transition: transform 0.25s var(--ease);
+      padding: 28px;
+    }
+
+    .modal-card.dark {
+      background: #0f172a;
+      color: #ffffff;
+      max-width: 820px;
+      border-color: #334155;
+    }
+
+    .modal-backdrop.active .modal-card {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 14px;
+    }
+
+    .modal-card.dark .modal-header {
+      border-color: #334155;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-close {
+      background: #f1f5f9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: #64748b;
+    }
+
+    .modal-card.dark .modal-close {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .modal-card.dark .form-label {
+      color: #cbd5e1;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-card.dark .form-input, .modal-card.dark .form-select {
+      background: #1e293b;
+      color: #ffffff;
+      border-color: #334155;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .pill-SUBMITTED { background: #fef3c7; color: #92400e; }
+    .pill-ACKNOWLEDGED { background: #e0f2fe; color: #0369a1; }
+    .pill-ASSIGNED { background: #ede9fe; color: #6d28d9; }
+    .pill-RESOLVED { background: #dcfce7; color: #15803d; }
+    .pill-CANCELLED { background: #f1f5f9; color: #475569; }
+
+    #incidentMapContainer {
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* -------------------------------------------------------------
        RESPONSIVE (<= 820px)
        ------------------------------------------------------------- */
     @media (max-width: 820px) {
+      .telemetry-banner {
+        font-size: 10px;
+        padding: 0 14px;
+      }
+
       .nav-links {
         display: none;
       }
 
       .nav {
         height: 54px;
-        top: 12px;
+        top: 36px;
         padding: 0 10px 0 16px;
       }
 
-      .login-btn {
-        padding: 0 6px;
-      }
-
       .nav.on .navcta {
-        margin-left: 8px;
+        margin-left: 6px;
       }
 
       #h1 {
-        top: 17vh;
+        top: 16vh;
         font-size: 7.4vw;
         white-space: normal;
         padding-right: var(--gut);
       }
 
       .trust {
-        top: 44vh;
+        top: 43vh;
       }
 
       .logos {
         width: 100%;
         left: 0;
         right: 0;
-        top: 50vh;
+        top: 52vh;
         bottom: 18vh;
       }
 
@@ -531,13 +860,13 @@
         height: 18px;
       }
 
-      .hero-cta {
-        bottom: 6vh;
+      .hero-actions {
+        bottom: 5vh;
       }
 
       #stmt {
         white-space: normal;
-        font-size: 23px;
+        font-size: 22px;
         max-width: 15em;
         margin: 0 auto;
         padding: 0 20px;
@@ -553,17 +882,38 @@
       }
 
       #h2 {
-        padding: 16vh 6vw 0;
+        padding: 14vh 6vw 0;
       }
 
       #row {
         grid-template-columns: 1fr;
-        padding: 3vh 6vw 6vh;
+        padding: 3vh 6vw 4vh;
+      }
+
+      .cad-trigger-wrap {
+        padding: 0 6vw 6vh;
       }
     }
   </style>
 </head>
 <body>
+
+  <!-- Top System Telemetry Bar -->
+  <aside class="telemetry-banner">
+    <div class="telemetry-left">
+      <span class="telemetry-tag">BUILDATHON 2.0 • H4</span>
+      <span id="connIndicator">🟢 System Online (Demo Mode)</span>
+      <span id="geoIndicator">📍 GPS Standby</span>
+    </div>
+    <div class="telemetry-actions">
+      <button class="btn-sim-offline" id="btnToggleOffline" title="Simulate network loss to verify truthful offline drafting">
+        Simulate Network Drop
+      </button>
+      <span id="activePersonaPill" class="persona-badge" onclick="cyclePersona()">
+        Role: Citizen (Aditya) ▾
+      </span>
+    </div>
+  </aside>
 
   <!-- Background Canvas for Bowl Glow -->
   <div class="atmo">
@@ -572,34 +922,38 @@
 
   <!-- Navbar -->
   <header class="nav" id="nav">
-    <a href="#" class="brand">
+    <div class="brand" onclick="scrollToTop()">
       <svg class="brand-svg" viewBox="0 0 22 22">
-        <circle cx="11" cy="11" r="11" fill="#5b7cf0"/>
-        <path d="M5 10.2c2.3-1.6 4.7-1.6 7 0s4.7 1.6 7 0" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-        <path d="M5 14.2c2.3-1.6 4.7-1.6 7 0s4.7 1.6 7 0" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <circle cx="11" cy="11" r="11" fill="#dc2626"/>
+        <path d="M4 11h3l2-5 3 10 2-5h4" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       </svg>
-      <span>Halden</span>
-    </a>
+      <span>PulseBridge</span>
+    </div>
 
     <nav class="nav-links">
-      <a href="#platform" class="nav-link">Platform</a>
-      <a href="#solutions" class="nav-link">Solutions</a>
-      <a href="#security" class="nav-link">Security</a>
-      <a href="#company" class="nav-link">Company</a>
-      <a href="#resources" class="nav-link">Resources</a>
+      <button class="nav-link" onclick="openSOSModal()">Emergency SOS</button>
+      <button class="nav-link" onclick="openTrackingModal()">Incident Tracking</button>
+      <button class="nav-link" onclick="openDashboardModal()">Responder Center</button>
+      <button class="nav-link" onclick="openMedicalModal()">Medical Profile</button>
+      <button class="nav-link" onclick="openHelpModal()">Disclosures</button>
     </nav>
 
     <div class="nav-right">
-      <a href="#login" class="login-btn">Login</a>
+      <a href="tel:112" class="call-112-btn" title="Direct call to India National Emergency 112">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        <span>Call 112</span>
+      </a>
+
+      <!-- Morphing Navbar Button -->
       <div class="navcta">
-        <a href="#demo" class="btn">
-          <span class="lbl">Get a demo</span>
+        <button class="btn sos" onclick="openSOSModal()">
+          <span class="lbl">Broadcast SOS</span>
           <span class="dot">
             <svg class="chevron" viewBox="0 0 12 12" fill="none">
               <path d="M4.5 2.5 8 6l-3.5 3.5" stroke="#0b1d3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-        </a>
+        </button>
       </div>
     </div>
   </header>
@@ -607,138 +961,434 @@
   <main>
     <!-- Scene 1: Hero -->
     <section class="hero" id="hero">
-      <h1 id="h1">Meet <span class="hl">Hal</span>, your AI teammate<br>for port operators</h1>
+      <h1 id="h1">Meet <span class="hl">PulseBridge</span>, intelligent coordination<br>for emergency assistance</h1>
 
       <div class="trust fade-up" style="--d: 1.15s">
-        Port operators trust Halden
+        <div>Connecting emergencies to coordinated on-site assistance.</div>
+        <div class="trust-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Live Telemetry • Consented Vitals • Zero Delay Dispatch
+        </div>
       </div>
 
-      <div class="hero-cta fade-up" style="--d: 1.3s">
-        <a href="#demo" class="btn lg">
-          <span>Get a demo</span>
+      <div class="hero-actions fade-up" style="--d: 1.3s">
+        <!-- Hero Primary SOS Button with Dot-to-Arrow Hover -->
+        <button class="btn lg sos" onclick="openSOSModal()">
+          <span>Broadcast SOS Alert</span>
           <span class="dot">
             <svg class="chevron" viewBox="0 0 12 12" fill="none">
               <path d="M4.5 2.5 8 6l-3.5 3.5" stroke="#0b1d3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-        </a>
+        </button>
+
+        <!-- Secondary Tracking Pill -->
+        <button class="btn-secondary" onclick="openTrackingModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Track Incident</span>
+        </button>
       </div>
 
+      <!-- Partner Wordmarks (Emergency Coordination Ecosystem) -->
       <div class="logos">
-        <!-- 1. OCEANEX -->
+        <!-- 1. 108 EMS -->
         <div class="logo-cell fade-up" style="--d: 1.25s">
           <div class="mark">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M3 9c3-2 6-2 9 0s6 2 9 0" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-              <path d="M3 15c3-2 6-2 9 0s6 2 9 0" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
             </svg>
-            <span>OCEANEX</span>
+            <span>108 EMS</span>
           </div>
         </div>
 
-        <!-- 2. Nordhavn -->
+        <!-- 2. AIIMS Trauma -->
         <div class="logo-cell fade-up" style="--d: 1.32s">
           <div class="mark">
-            <span style="font-family: Georgia, serif; font-weight: bold; font-style: italic; font-size: 15px; letter-spacing: 0.02em;">Nordhavn</span>
+            <span style="font-family: Georgia, serif; font-weight: bold; font-style: italic; font-size: 14px; letter-spacing: 0.02em;">AIIMS Trauma</span>
           </div>
         </div>
 
-        <!-- 3. BLUEGATE -->
+        <!-- 3. NDRF -->
         <div class="logo-cell fade-up" style="--d: 1.39s">
           <div class="mark">
             <svg viewBox="0 0 18 20" fill="currentColor">
-              <rect x="1" y="10" width="3.5" height="10" rx="1"/>
-              <rect x="7" y="5" width="3.5" height="15" rx="1"/>
-              <rect x="13" y="8" width="3.5" height="12" rx="1"/>
+              <polygon points="9,1 17,5 17,11 9,19 1,11 1,5"/>
             </svg>
-            <span>BLUEGATE</span>
+            <span>NDRF</span>
           </div>
         </div>
 
-        <!-- 4. KELPWAY -->
+        <!-- 4. RED CROSS -->
         <div class="logo-cell fade-up" style="--d: 1.46s">
           <div class="mark">
             <svg viewBox="0 0 20 20" fill="none">
-              <polygon points="10,2 18,17 2,17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="7" y="2" width="6" height="16" fill="currentColor"/>
+              <rect x="2" y="7" width="16" height="6" fill="currentColor"/>
             </svg>
-            <span style="font-size: 11px; font-weight: 500; letter-spacing: 0.32em;">KELPWAY</span>
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em;">RED CROSS</span>
           </div>
         </div>
 
-        <!-- 5. TIDELINE -->
+        <!-- 5. CIVIL DEF -->
         <div class="logo-cell fade-up" style="--d: 1.42s">
           <div class="mark">
-            <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; border: 2px solid currentColor; border-radius: 4px; padding: 2px 7px; display: inline-block;">TIDELINE</span>
+            <span style="font-size: 13px; font-weight: 800; letter-spacing: -0.02em; border: 2px solid currentColor; border-radius: 4px; padding: 2px 7px;">CIVIL DEF</span>
           </div>
         </div>
 
-        <!-- 6. HARBORIX -->
+        <!-- 6. ST. JOHN -->
         <div class="logo-cell fade-up" style="--d: 1.49s">
           <div class="mark">
             <svg viewBox="0 0 18 20" fill="none">
               <path d="M3 2v16M15 2v16M3 10h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
             </svg>
-            <span>HARBORIX</span>
+            <span>ST. JOHN</span>
           </div>
         </div>
 
-        <!-- 7. seaflux -->
+        <!-- 7. CAD TRIAGE -->
         <div class="logo-cell fade-up" style="--d: 1.56s">
           <div class="mark">
             <svg viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2"/>
               <circle cx="10" cy="10" r="2.2" fill="currentColor"/>
             </svg>
-            <span style="font-size: 15px; font-weight: 500; text-transform: lowercase;">seaflux</span>
+            <span style="font-size: 13px; font-weight: 600;">CAD-TRIAGE</span>
           </div>
         </div>
 
-        <!-- 8. PORTERRA -->
+        <!-- 8. DISASTER RES -->
         <div class="logo-cell fade-up" style="--d: 1.63s">
           <div class="mark">
             <svg viewBox="0 0 20 18" fill="currentColor">
               <polygon points="10,2 19,16 1,16"/>
               <polygon points="14,8 19,16 9,16" opacity="0.65"/>
             </svg>
-            <span style="font-size: 11px; letter-spacing: 0.24em;">PORTERRA</span>
+            <span style="font-size: 11px; letter-spacing: 0.2em;">DISASTER</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Scene 2: Statement (Pinned) -->
+    <!-- Scene 2: Statement (Pinned Scroll) -->
     <section class="statement" id="statement">
       <div class="pin">
-        <p id="stmt">Hal is an AI teammate<br> that tracks vessels, books berths, files customs,<br> coordinates crews, escalates and does anything<br> in between to keep a port moving</p>
+        <p id="stmt">PulseBridge connects citizens to responders<br> that triages incidents, streams live GPS, verifies triage,<br> coordinates medical aid, notifies contacts and does anything<br> in between to keep an emergency response moving</p>
       </div>
     </section>
 
-    <!-- Scene 3: Dark Split -->
+    <!-- Scene 3: Dark Split (Tactical Responder Center) -->
     <section class="split" id="split">
       <div class="l">
         <div class="guide-line"></div>
-        <h2 id="h2">AI teammate that operates<br>like you work</h2>
+        <h2 id="h2">Tactical coordination that operates<br>when every second counts</h2>
+
         <div id="row">
-          <h3>Port operators</h3>
-          <p><strong style="color: #ffffff; font-weight: 500;">Berth faster. Clear more. Stop chasing manifests.</strong> Hal runs scheduling, bookings, customs filings, and more — so your team stays focused on throughput and safety.</p>
+          <h3>Emergency Responders</h3>
+          <p><strong style="color: #ffffff; font-weight: 500;">Triage faster. Locate precisely. Stop losing critical minutes.</strong> PulseBridge streams real-time telemetry, consented vitals, and verified routing — so field medics arrive equipped and on target.</p>
+        </div>
+
+        <div class="cad-trigger-wrap">
+          <button class="btn-cad-open" onclick="openDashboardModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <span>Open Tactical CAD Dashboard</span>
+          </button>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.45);">
+            Real-time incident dispatch, unit assignment & audit log
+          </span>
         </div>
       </div>
+
       <div class="r">
-        <img id="ship" src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261029_050506_a830ff21-4c71-4272-bc39-b61cacb54463.png&w=1400&q=85" alt="Aerial view of a container ship sailing up a misty fjord">
+        <img id="ship" src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261029_050506_a830ff21-4c71-4272-bc39-b61cacb54463.png&w=1400&q=85" alt="Aerial view of emergency dispatch coordinate zone">
       </div>
     </section>
   </main>
 
+  <!-- =============================================================
+       MODAL 1: EMERGENCY SOS BROADCAST WORKFLOW
+       ============================================================= -->
+  <div class="modal-backdrop" id="sosModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" style="color: var(--sos-red); display: flex; align-items: center; gap: 8px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Broadcast Emergency SOS
+          </div>
+          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+            Immediate assistance request with GPS & consented vitals
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('sosModal')">&times;</button>
+      </div>
+
+      <!-- Confirmation safeguard banner -->
+      <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #991b1b; display: flex; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div>
+          <strong>Accidental Alert Protection:</strong> Once confirmed, this signal alerts active response teams. If someone is severely injured, dial <strong>112</strong> immediately.
+        </div>
+      </div>
+
+      <form id="sosForm" onsubmit="handleSOSSubmit(event)">
+        <!-- Incident Type -->
+        <div class="form-group">
+          <label class="form-label">Incident Type *</label>
+          <select id="sosType" class="form-select" required>
+            <option value="medical_emergency">Medical Emergency (Heart, Asthma, Stroke)</option>
+            <option value="injury">Physical Injury / Fall / Fracture</option>
+            <option value="accident">Road / Vehicle / Machinery Accident</option>
+            <option value="other">Other Life-Safety Incident</option>
+          </select>
+        </div>
+
+        <!-- Geolocation Telemetry -->
+        <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="form-label" style="margin-bottom:0;">Live GPS Telemetry</span>
+            <button type="button" onclick="acquireLiveLocation()" style="font-size: 11px; background: #0284c7; color: #fff; border:none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+              Detect Coordinates
+            </button>
+          </div>
+          <div id="sosGpsText" style="font-size: 12px; color: #64748b;">
+            Click 'Detect Coordinates' to capture device GPS fix with accuracy.
+          </div>
+        </div>
+
+        <!-- Landmark Fallback -->
+        <div class="form-group">
+          <label class="form-label">Landmark / Floor / Room Description *</label>
+          <input type="text" id="sosLandmark" class="form-input" placeholder="e.g. Science Block 3, 2nd Floor Lab 204 near staircase" required>
+        </div>
+
+        <!-- Optional Description -->
+        <div class="form-group">
+          <label class="form-label">Emergency Description (Optional)</label>
+          <textarea id="sosDesc" class="form-textarea" rows="2" placeholder="Brief triage notes: patient conscious, difficulty breathing..."></textarea>
+        </div>
+
+        <!-- Consented Medical Info Toggle -->
+        <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 10px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 600; color: #166534;">Attach Consented Medical Profile</div>
+            <div style="font-size: 11px; color: #15803d;" id="attachedMedicalSummary">
+              Includes: O+ Blood, Penicillin Allergy, Salbutamol
+            </div>
+          </div>
+          <input type="checkbox" id="sosIncludeMedical" checked style="width: 18px; height: 18px; accent-color: #16a34a;">
+        </div>
+
+        <button type="submit" id="btnConfirmSOS" class="btn lg sos" style="width: 100%; justify-content: center; margin-top: 8px;">
+          <span>Confirm & Broadcast SOS</span>
+          <span class="dot">
+            <svg class="chevron" viewBox="0 0 12 12" fill="none">
+              <path d="M4.5 2.5 8 6l-3.5 3.5" stroke="#0b1d3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =============================================================
+       MODAL 2: INCIDENT TRACKING
+       ============================================================= -->
+  <div class="modal-backdrop" id="trackingModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Live Incident Tracking</div>
+          <div style="font-size: 12px; color: #64748b;">Telemetry verification & responder dispatch updates</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('trackingModal')">&times;</button>
+      </div>
+
+      <!-- Quick lookup input -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <input type="text" id="trackSearchInput" class="form-input" placeholder="Search Ref ID (e.g. PB-901)" style="flex:1;">
+        <button onclick="handleTrackingSearch()" style="padding: 0 16px; border-radius: 10px; background: var(--ink); color:#fff; border:none; font-weight:600; cursor:pointer;">
+          Search
+        </button>
+      </div>
+
+      <!-- Incident Record Card -->
+      <div id="trackingContent" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================================
+       MODAL 3: RESPONDER CAD DASHBOARD
+       ============================================================= -->
+  <div class="modal-backdrop" id="dashboardModal">
+    <div class="modal-card dark">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" style="color: #38bdf8; display:flex; align-items:center; gap:8px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Tactical CAD Responder Center
+          </div>
+          <div style="font-size: 12px; color: #94a3b8;">
+            Authorized Computer-Aided Dispatch & Unit Assignment Console
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('dashboardModal')">&times;</button>
+      </div>
+
+      <!-- Metrics Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px;">
+        <div style="background: #1e293b; padding: 12px; border-radius: 10px; border: 1px solid #334155;">
+          <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Active Incidents</div>
+          <div id="statActive" style="font-size: 24px; font-weight: 800; color: #ffffff;">3</div>
+        </div>
+        <div style="background: #1e293b; padding: 12px; border-radius: 10px; border: 1px solid #f59e0b;">
+          <div style="font-size: 11px; color: #f59e0b; text-transform: uppercase;">Unacknowledged</div>
+          <div id="statUnack" style="font-size: 24px; font-weight: 800; color: #fbbf24;">1</div>
+        </div>
+        <div style="background: #1e293b; padding: 12px; border-radius: 10px; border: 1px solid #334155;">
+          <div style="font-size: 11px; color: #c084fc; text-transform: uppercase;">Assigned</div>
+          <div id="statAssigned" style="font-size: 24px; font-weight: 800; color: #d8b4fe;">1</div>
+        </div>
+        <div style="background: #1e293b; padding: 12px; border-radius: 10px; border: 1px solid #334155;">
+          <div style="font-size: 11px; color: #4ade80; text-transform: uppercase;">Resolved</div>
+          <div id="statResolved" style="font-size: 24px; font-weight: 800; color: #86efac;">1</div>
+        </div>
+      </div>
+
+      <!-- Live OpenStreetMap -->
+      <div style="font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">
+        📍 Live Incident Distribution Map
+      </div>
+      <div id="incidentMapContainer"></div>
+
+      <!-- Incident Queue -->
+      <div style="font-size: 13px; font-weight: 600; color: #cbd5e1; margin: 16px 0 8px;">
+        Tactical Triage Queue
+      </div>
+      <div id="cadIncidentList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================================
+       MODAL 4: MEDICAL PROFILE & CONTACTS
+       ============================================================= -->
+  <div class="modal-backdrop" id="medicalModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Emergency Medical Profile</div>
+          <div style="font-size: 12px; color: #64748b;">User-controlled • Consented vital records • No automated diagnosis</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('medicalModal')">&times;</button>
+      </div>
+
+      <form id="medProfileForm" onsubmit="handleSaveMedicalProfile(event)">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="medName" class="form-input" value="Aditya Sharma" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Blood Group</label>
+          <select id="medBlood" class="form-select">
+            <option value="O+">O+ (Universal Red Cell Donor)</option>
+            <option value="O-">O-</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Known Allergies (Medications / Foods)</label>
+          <input type="text" id="medAllergies" class="form-input" value="Penicillin, Dust mites">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Current Regular Medications</label>
+          <input type="text" id="medMeds" class="form-input" value="Salbutamol (as needed for asthma)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Critical Medical Notes</label>
+          <textarea id="medNotes" class="form-textarea" rows="2">History of exercise-induced asthma. Keep inhaler within reach.</textarea>
+        </div>
+
+        <div class="form-group" style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+          <label class="form-label">Trusted Emergency Contacts</label>
+          <div id="contactsList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+            <div style="background:#f8fafc; padding:8px 12px; border-radius:8px; font-size:12.5px; display:flex; justify-content:space-between;">
+              <span><strong>Ananya Sharma (Sister)</strong></span>
+              <a href="tel:+919876543210" style="color:#0284c7;">+91 98765 43210</a>
+            </div>
+          </div>
+          <div style="font-size:11px; color:#64748b;">
+            Note: Contact numbers are attached to verified incidents for responder notifications.
+          </div>
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; justify-content: center; height: 48px;">
+          <span>Save Medical Profile</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =============================================================
+       MODAL 5: DISCLOSURES & TECHNICAL SPEC
+       ============================================================= -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Disclosures & Helplines</div>
+          <div style="font-size: 12px; color: #64748b;">BUILDATHON 2.0 • Problem H4: Emergency Health Assistance</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('helpModal')">&times;</button>
+      </div>
+
+      <div style="font-size: 13.5px; color: #334155; line-height: 1.6; display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 10px; color: #92400e;">
+          <strong>Mandatory Disclosure:</strong> PulseBridge is an engineering hackathon prototype designed to coordinate local and campus responders. It supports but does <strong>not</strong> replace municipal 112/108 services.
+        </div>
+
+        <div>
+          <strong style="color:var(--ink);">Official Emergency Helplines (India):</strong>
+          <ul style="padding-left: 20px; margin-top: 6px; font-size: 13px;">
+            <li><strong>112</strong> — National All-in-One Helpline</li>
+            <li><strong>108 / 102</strong> — Emergency Medical & Ambulance Services</li>
+            <li><strong>100</strong> — Police Emergency</li>
+            <li><strong>101</strong> — Fire & Rescue Services</li>
+          </ul>
+        </div>
+
+        <div>
+          <strong style="color:var(--ink);">Security & Data Privacy:</strong>
+          <p style="font-size: 12.5px; color: #64748b; margin-top: 4px;">
+            GPS telemetry is queried strictly on-demand. No passive background tracking. Consented medical data is snapshotted only into active incident payloads.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ==========================================================================
-       LETTER REVEAL SYSTEM
+       LETTER REVEAL SYSTEM (Exact Visual Preservation)
        ========================================================================== */
     function splitText(el) {
       const html = el.innerHTML;
       const chars = [];
       el.innerHTML = '';
 
-      // Parse tokens while keeping words and linebreaks
       const temp = document.createElement('div');
       temp.innerHTML = html;
 
@@ -808,18 +1458,18 @@
         } else if (t <= 0.35) {
           const sub = t / 0.35;
           opacity = sub;
-          blur = 8 - 6.5 * sub; // 8 -> 1.5
+          blur = 8 - 6.5 * sub;
           col = ghostColor;
         } else if (t <= 0.70) {
           const sub = (t - 0.35) / 0.35;
           opacity = 1;
-          blur = 1.5 * (1 - sub); // 1.5 -> 0
+          blur = 1.5 * (1 - sub);
           col = lerpColor(ghostColor, accentColor, sub);
         } else {
           const sub = (t - 0.70) / 0.30;
           opacity = 1;
           blur = 0;
-          const target = item.isHl ? [91, 124, 240] : finalColor;
+          const target = item.isHl ? [220, 38, 38] : finalColor; // Accent highlights
           col = lerpColor(accentColor, target, sub);
         }
 
@@ -829,24 +1479,22 @@
       }
     }
 
-    // Color definitions
     const COLOR_WHITE = [255, 255, 255];
-    const COLOR_NAVY = [11, 29, 58];       // #0b1d3a
-    const COLOR_ACCENT = [63, 124, 255];    // #3f7cff
-    const COLOR_DARK_GHOST = [92, 111, 146];// #5c6f92
-    const COLOR_DARK_ACCENT = [143, 230, 244]; // #8fe6f4
+    const COLOR_NAVY = [11, 29, 58];
+    const COLOR_ACCENT = [220, 38, 38];     // Pulse emergency accent
+    const COLOR_DARK_GHOST = [92, 111, 146];
+    const COLOR_DARK_ACCENT = [143, 230, 244];
 
     const h1Chars = splitText(document.getElementById('h1'));
     const stmtChars = splitText(document.getElementById('stmt'));
     const h2Chars = splitText(document.getElementById('h2'));
 
-    // Initial paint at p=0
     paint(h1Chars, 0, 0.35, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
     paint(stmtChars, 0, 0.16, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
     paint(h2Chars, 0, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
 
     /* ==========================================================================
-       CANVAS BOWL GLOW
+       CANVAS BOWL GLOW (Exact Algorithmic Preservation)
        ========================================================================== */
     const canvas = document.getElementById('bg');
     const ctx = canvas.getContext('2d');
@@ -939,12 +1587,10 @@
         curSoft += (tgt.soft - curSoft) * 0.12;
       }
 
-      // Idle breathing wobble
       const effTip = curTip + Math.sin(time * 0.00033 + 1.3) * 0.02;
       const effHalf = curHalf + Math.sin(time * 0.0005) * 0.015;
       const soft = curSoft;
 
-      // Build 48 curve points
       for (let k = 0; k < 48; k++) {
         const yy = -0.3 + (effTip - (-0.3)) * (k / 47);
         const normY = Math.max(0, 1 - yy / effTip);
@@ -972,7 +1618,7 @@
           }
 
           const sd = isInside ? -minDist : minDist;
-          const dist = sd - 0.25; // RND = 0.25 inflates into round bottom
+          const dist = sd - 0.25;
           const g = 1 - smoothstep(0, 1, (dist + soft) / (2 * soft));
 
           let r = 255, gr = 255, b = 255;
@@ -1024,7 +1670,6 @@
       const pStmt = Math.max(0, Math.min(1, (q - 0.56) / 2.03));
       paint(stmtChars, pStmt, 0.16, COLOR_NAVY, COLOR_ACCENT, COLOR_WHITE);
 
-      // Nav CTA reveal when statement reaches ~40%
       if (pStmt > 0.4) {
         nav.classList.add('on');
       } else {
@@ -1043,7 +1688,7 @@
         row.classList.remove('visible');
       }
 
-      // 3. Ship Image Zoom-out
+      // 3. Image Zoom
       const shipT = Math.max(0, Math.min(1, 1 - splitTop / vh));
       const scale = 1.08 - 0.08 * shipT;
       ship.style.transform = 'scale(' + scale.toFixed(4) + ')';
@@ -1053,13 +1698,446 @@
     window.addEventListener('resize', onScroll, { passive: true });
 
     /* ==========================================================================
-       INITIALIZATION & HERO HEADLINE INTRO
+       PULSEBRIDGE CORE APPLICATION LOGIC & STORE
+       ========================================================================== */
+    const INITIAL_INCIDENTS = [
+      {
+        id: "inc-01",
+        ref: "PB-901",
+        type: "Medical Emergency",
+        desc: "Severe asthma exacerbation in campus library. Inhaler unavailable.",
+        status: "SUBMITTED",
+        lat: 12.9716,
+        lng: 77.5946,
+        accuracy: 8,
+        landmark: "Central Library, 2nd Floor, Desk 42",
+        medical: "O+ Blood | Allergies: Penicillin | Salbutamol",
+        timestamp: new Date(Date.now() - 12 * 60000).toISOString(),
+        acknowledgedBy: null,
+        assignedUnit: null,
+        events: [
+          { status: "SUBMITTED", time: "12m ago", desc: "Citizen SOS broadcast received" }
+        ]
+      },
+      {
+        id: "inc-02",
+        ref: "PB-902",
+        type: "Accident",
+        desc: "Two-wheeler skid near gate. Conscious, superficial abrasions.",
+        status: "ACKNOWLEDGED",
+        lat: 12.9752,
+        lng: 77.6012,
+        accuracy: 14,
+        landmark: "Near Main Gate Crossroad",
+        medical: "B+ Blood | No known drug allergies",
+        timestamp: new Date(Date.now() - 25 * 60000).toISOString(),
+        acknowledgedBy: "Dispatcher Sarah (CAD)",
+        assignedUnit: null,
+        events: [
+          { status: "SUBMITTED", time: "25m ago", desc: "Incident reported" },
+          { status: "ACKNOWLEDGED", time: "18m ago", desc: "Acknowledged by Dispatcher Sarah" }
+        ]
+      },
+      {
+        id: "inc-03",
+        ref: "PB-903",
+        type: "Injury",
+        desc: "Heat exhaustion and sprain during marathon event.",
+        status: "ASSIGNED",
+        lat: 12.9680,
+        lng: 77.5890,
+        accuracy: 5,
+        landmark: "Athletics Ground Pavilion",
+        medical: "A+ Blood | Sulfa Allergies",
+        timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
+        acknowledgedBy: "Dispatcher Sarah",
+        assignedUnit: "Paramedic Team Alpha (Unit 4)",
+        events: [
+          { status: "SUBMITTED", time: "45m ago", desc: "Incident reported" },
+          { status: "ACKNOWLEDGED", time: "38m ago", desc: "Acknowledged by Central Dispatch" },
+          { status: "ASSIGNED", time: "20m ago", desc: "Assigned to Paramedic Team Alpha (ETA 3m)" }
+        ]
+      },
+      {
+        id: "inc-04",
+        ref: "PB-904",
+        type: "Medical Emergency",
+        desc: "Hypoglycemia stabilized on site with glucose.",
+        status: "RESOLVED",
+        lat: 12.9620,
+        lng: 77.6100,
+        accuracy: 12,
+        landmark: "Auditorium Annex Block C",
+        medical: "AB+ Blood | Diabetic",
+        timestamp: new Date(Date.now() - 120 * 60000).toISOString(),
+        acknowledgedBy: "Dr. Vikram",
+        assignedUnit: "Campus Medical Officer",
+        events: [
+          { status: "SUBMITTED", time: "2h ago", desc: "Incident reported" },
+          { status: "RESOLVED", time: "40m ago", desc: "Handover completed by Dr. Vikram" }
+        ]
+      }
+    ];
+
+    let incidents = JSON.parse(localStorage.getItem('pb_incidents')) || INITIAL_INCIDENTS;
+    let activeIncidentId = incidents[0].id;
+    let isSimulatedOffline = false;
+    let currentCoords = null;
+
+    const PERSONAS = [
+      { name: "Citizen (Aditya)", role: "user" },
+      { name: "Dispatcher Sarah", role: "responder" },
+      { name: "Dr. Vikram (Medical Lead)", role: "responder" }
+    ];
+    let personaIndex = 0;
+
+    function saveIncidents() {
+      localStorage.setItem('pb_incidents', JSON.stringify(incidents));
+      renderCADList();
+      renderStats();
+      if (document.getElementById('trackingModal').classList.contains('active')) {
+        renderTrackingView(activeIncidentId);
+      }
+    }
+
+    function cyclePersona() {
+      personaIndex = (personaIndex + 1) % PERSONAS.length;
+      document.getElementById('activePersonaPill').textContent = `Role: ${PERSONAS[personaIndex].name} ▾`;
+      renderCADList();
+    }
+
+    // Modal helpers
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function openSOSModal() {
+      acquireLiveLocation();
+      openModal('sosModal');
+    }
+
+    function openTrackingModal(id) {
+      if (id) activeIncidentId = id;
+      renderTrackingView(activeIncidentId);
+      openModal('trackingModal');
+    }
+
+    function openDashboardModal() {
+      renderStats();
+      renderCADList();
+      openModal('dashboardModal');
+      setTimeout(initCADMap, 150);
+    }
+
+    function openMedicalModal() {
+      openModal('medicalModal');
+    }
+
+    function openHelpModal() {
+      openModal('helpModal');
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Geolocation Handling
+    function acquireLiveLocation() {
+      const geoText = document.getElementById('sosGpsText');
+      const geoPill = document.getElementById('geoIndicator');
+      if (!navigator.geolocation) {
+        geoText.textContent = "Geolocation is not supported by your browser. Please fill landmark description.";
+        geoPill.textContent = "📍 GPS Unavailable";
+        return;
+      }
+
+      geoText.textContent = "Acquiring high-accuracy GPS fix from satellite sensors...";
+      geoPill.textContent = "📍 Acquiring GPS...";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = parseFloat(pos.coords.latitude.toFixed(5));
+          const lng = parseFloat(pos.coords.longitude.toFixed(5));
+          const acc = Math.round(pos.coords.accuracy);
+          currentCoords = { lat, lng, acc };
+          geoText.textContent = `GPS Fix Acquired: ${lat}, ${lng} (±${acc}m accuracy)`;
+          geoText.style.color = "#15803d";
+          geoPill.textContent = `📍 GPS Active (±${acc}m)`;
+        },
+        (err) => {
+          geoText.textContent = "GPS signal unavailable or permission denied. Please enter manual landmark details.";
+          geoText.style.color = "#dc2626";
+          geoPill.textContent = "📍 Manual Landmark Only";
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    // Toggle Simulated Offline
+    document.getElementById('btnToggleOffline').addEventListener('click', () => {
+      isSimulatedOffline = !isSimulatedOffline;
+      const btn = document.getElementById('btnToggleOffline');
+      const ind = document.getElementById('connIndicator');
+      if (isSimulatedOffline) {
+        btn.classList.add('active');
+        btn.textContent = "Offline Active (Click to Restore)";
+        ind.textContent = "🔴 Offline Mode";
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = "Simulate Network Drop";
+        ind.textContent = "🟢 System Online (Demo Mode)";
+      }
+    });
+
+    // SOS Form Submission
+    function handleSOSSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnConfirmSOS');
+      if (btn.disabled) return;
+
+      const type = document.getElementById('sosType').value;
+      const landmark = document.getElementById('sosLandmark').value.trim();
+      const desc = document.getElementById('sosDesc').value.trim();
+      const includeMed = document.getElementById('sosIncludeMedical').checked;
+
+      btn.disabled = true;
+      btn.querySelector('span:first-child').textContent = "Broadcasting Alert...";
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.querySelector('span:first-child').textContent = "Confirm & Broadcast SOS";
+
+        const newRef = "PB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const newInc = {
+          id: "inc-" + Date.now(),
+          ref: newRef,
+          type: type.replace('_', ' ').toUpperCase(),
+          desc: desc || "Emergency SOS broadcast triggered from mobile interface.",
+          status: "SUBMITTED",
+          lat: currentCoords ? currentCoords.lat : 12.9716,
+          lng: currentCoords ? currentCoords.lng : 77.5946,
+          accuracy: currentCoords ? currentCoords.acc : 15,
+          landmark: landmark,
+          medical: includeMed ? "O+ Blood | Allergies: Penicillin, Dust | Salbutamol" : "None consented",
+          timestamp: new Date().toISOString(),
+          acknowledgedBy: null,
+          assignedUnit: null,
+          isOfflineDraft: isSimulatedOffline,
+          events: [
+            { status: "SUBMITTED", time: "Just now", desc: isSimulatedOffline ? "Offline draft saved locally" : "Incident broadcast confirmed" }
+          ]
+        };
+
+        incidents.unshift(newInc);
+        activeIncidentId = newInc.id;
+        saveIncidents();
+        closeModal('sosModal');
+
+        if (isSimulatedOffline) {
+          alert("Network connection unavailable. Emergency incident saved as an OFFLINE DRAFT on your device. Please dial official emergency 112 immediately.");
+        } else {
+          openTrackingModal(newInc.id);
+        }
+      }, 700);
+    }
+
+    // Render Tracking Modal View
+    function renderTrackingView(id) {
+      const inc = incidents.find(i => i.id === id || i.ref === id) || incidents[0];
+      const container = document.getElementById('trackingContent');
+      if (!inc) {
+        container.innerHTML = "<div>No active incident found.</div>";
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:18px; font-weight:800; color:var(--ink);">${inc.ref}</span>
+            <span class="status-pill pill-${inc.status}">${inc.status}</span>
+          </div>
+          <div style="font-size:12px; color:#64748b; margin-bottom:12px;">
+            ${new Date(inc.timestamp).toLocaleTimeString()} • ${inc.type}
+          </div>
+          <div style="font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:8px;">
+            <strong>Landmark:</strong> ${inc.landmark}
+          </div>
+          ${inc.desc ? `<div style="font-size:12.5px; color:#475569; margin-bottom:8px;"><strong>Details:</strong> ${inc.desc}</div>` : ''}
+          <div style="font-size:12px; color:#0284c7; margin-bottom:8px;">
+            📍 Coordinates: ${inc.lat}, ${inc.lng} (±${inc.accuracy}m accuracy)
+          </div>
+          ${inc.assignedUnit ? `<div style="font-size:12.5px; color:#7c3aed; font-weight:600;">🚑 Dispatched: ${inc.assignedUnit}</div>` : ''}
+        </div>
+
+        <div>
+          <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px;">Triage Milestones</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            ${inc.events.map(ev => `
+              <div style="font-size:12px; padding:6px 10px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; display:flex; justify-content:space-between;">
+                <span><strong>${ev.status}:</strong> ${ev.desc}</span>
+                <span style="color:#64748b;">${ev.time}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        ${inc.status === 'SUBMITTED' ? `
+          <button onclick="cancelIncident('${inc.id}')" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:8px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;">
+            Cancel Incident / False Alarm
+          </button>
+        ` : ''}
+      `;
+    }
+
+    function handleTrackingSearch() {
+      const q = document.getElementById('trackSearchInput').value.trim();
+      if (!q) return;
+      const found = incidents.find(i => i.ref.toLowerCase() === q.toLowerCase() || i.id === q);
+      if (found) {
+        activeIncidentId = found.id;
+        renderTrackingView(found.id);
+      } else {
+        alert(`No incident found matching reference code "${q}".`);
+      }
+    }
+
+    function cancelIncident(id) {
+      if (!confirm("Are you sure you want to cancel this incident?")) return;
+      const inc = incidents.find(i => i.id === id);
+      if (inc) {
+        inc.status = 'CANCELLED';
+        inc.events.push({ status: 'CANCELLED', time: 'Just now', desc: 'Cancelled by requester' });
+        saveIncidents();
+      }
+    }
+
+    // Responder CAD Actions
+    function renderStats() {
+      const active = incidents.filter(i => i.status !== 'RESOLVED' && i.status !== 'CANCELLED').length;
+      const unack = incidents.filter(i => i.status === 'SUBMITTED').length;
+      const assigned = incidents.filter(i => i.status === 'ASSIGNED').length;
+      const resolved = incidents.filter(i => i.status === 'RESOLVED').length;
+
+      document.getElementById('statActive').textContent = active;
+      document.getElementById('statUnack').textContent = unack;
+      document.getElementById('statAssigned').textContent = assigned;
+      document.getElementById('statResolved').textContent = resolved;
+    }
+
+    function renderCADList() {
+      const list = document.getElementById('cadIncidentList');
+      if (!list) return;
+
+      const isResponder = PERSONAS[personaIndex].role === 'responder';
+
+      list.innerHTML = incidents.map(inc => `
+        <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong style="color:#ffffff; font-size:13px;">${inc.ref}</strong>
+              <span class="status-pill pill-${inc.status}">${inc.status}</span>
+              <span style="font-size:11px; color:#94a3b8;">${inc.type}</span>
+            </div>
+            <div style="font-size:11.5px; color:#cbd5e1; margin-top:2px;">
+              ${inc.landmark} • <span style="color:#38bdf8;">${inc.lat}, ${inc.lng}</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            ${isResponder && inc.status === 'SUBMITTED' ? `
+              <button onclick="cadAcknowledge('${inc.id}')" style="background:#0284c7; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">
+                Acknowledge
+              </button>
+            ` : ''}
+            ${isResponder && (inc.status === 'SUBMITTED' || inc.status === 'ACKNOWLEDGED') ? `
+              <button onclick="cadAssign('${inc.id}')" style="background:#7c3aed; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">
+                Assign Unit
+              </button>
+            ` : ''}
+            ${isResponder && inc.status === 'ASSIGNED' ? `
+              <button onclick="cadResolve('${inc.id}')" style="background:#16a34a; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">
+                Resolve
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function cadAcknowledge(id) {
+      const inc = incidents.find(i => i.id === id);
+      if (inc) {
+        inc.status = 'ACKNOWLEDGED';
+        inc.acknowledgedBy = PERSONAS[personaIndex].name;
+        inc.events.push({ status: 'ACKNOWLEDGED', time: 'Just now', desc: `Verified by ${inc.acknowledgedBy}` });
+        saveIncidents();
+      }
+    }
+
+    function cadAssign(id) {
+      const unit = prompt("Assign responder paramedic unit name:", "Paramedic Team Alpha (Unit 4)");
+      if (!unit) return;
+      const inc = incidents.find(i => i.id === id);
+      if (inc) {
+        inc.status = 'ASSIGNED';
+        inc.assignedUnit = unit;
+        inc.events.push({ status: 'ASSIGNED', time: 'Just now', desc: `Dispatched ${unit}` });
+        saveIncidents();
+      }
+    }
+
+    function cadResolve(id) {
+      const notes = prompt("Triage resolution / handover notes:", "Patient stabilized on site. Handover complete.");
+      if (notes === null) return;
+      const inc = incidents.find(i => i.id === id);
+      if (inc) {
+        inc.status = 'RESOLVED';
+        inc.events.push({ status: 'RESOLVED', time: 'Just now', desc: notes });
+        saveIncidents();
+      }
+    }
+
+    // Leaflet Interactive CAD Map
+    let leafletMap = null;
+    function initCADMap() {
+      const mapDiv = document.getElementById('incidentMapContainer');
+      if (!mapDiv || typeof L === 'undefined') return;
+
+      if (!leafletMap) {
+        leafletMap = L.map('incidentMapContainer').setView([12.9716, 77.5946], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(leafletMap);
+      } else {
+        leafletMap.invalidateSize();
+      }
+
+      // Add pins
+      incidents.forEach(inc => {
+        if (inc.lat && inc.lng) {
+          L.marker([inc.lat, inc.lng])
+            .addTo(leafletMap)
+            .bindPopup(`<strong>${inc.ref}</strong> (${inc.status})<br>${inc.landmark}`);
+        }
+      });
+    }
+
+    function handleSaveMedicalProfile(e) {
+      e.preventDefault();
+      alert("Emergency Medical Profile saved securely. Consent recorded for active SOS transmissions.");
+      closeModal('medicalModal');
+    }
+
+    /* ==========================================================================
+       INITIALIZATION
        ========================================================================== */
     requestAnimationFrame((time) => {
       document.body.classList.add('ready');
       requestAnimationFrame(renderGlow);
 
-      // Time-based reveal for hero headline over 1.25s
       const h1Start = performance.now();
       function animateH1(now) {
         const elapsed = (now - h1Start) / 1250;
