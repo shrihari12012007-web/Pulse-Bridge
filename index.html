@@ -41,7 +41,6 @@
 
     html {
       overflow-x: hidden;
-      scroll-behavior: smooth;
     }
 
     body {
@@ -750,7 +749,7 @@
        ------------------------------------------------------------- */
     .statement {
       position: relative;
-      height: 160vh;
+      height: 200vh;
       margin-top: 0;
       pointer-events: none;
     }
@@ -762,6 +761,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
 
     #stmt {
@@ -772,11 +772,11 @@
       text-align: center;
       font-weight: 400;
       font-size: clamp(22px, 2.7vw, 40px);
-      line-height: 1.24;
+      line-height: 1.28;
       letter-spacing: -0.03em;
       color: var(--ink);
       white-space: nowrap;
-      will-change: transform;
+      will-change: transform, opacity;
       padding: 0 var(--gut);
     }
 
@@ -2388,17 +2388,18 @@
 
     const COLOR_WHITE = [255, 255, 255];
     const COLOR_NAVY = [11, 29, 58];
-    const COLOR_REVEAL_ACCENT = [63, 124, 255]; // #3f7cff Motion sky-blue reveal accent (white -> blue -> navy)
-    const COLOR_HL = [220, 38, 38];             // Pulse emergency accent for highlighted word
+    const COLOR_REVEAL_ACCENT = [63, 124, 255]; // #3f7cff Motion sky-blue reveal accent (ghost -> sky-blue -> navy)
+    const COLOR_HL = [220, 38, 38];             // Pulse emergency red accent for highlighted word
     const COLOR_DARK_GHOST = [92, 111, 146];
     const COLOR_DARK_ACCENT = [143, 230, 244];
+    const COLOR_LIGHT_GHOST = [182, 196, 216]; // Soft slate-blue watermark for light backgrounds (never invisible)
 
     const h1Chars = splitText(document.getElementById('h1'));
     const stmtChars = splitText(document.getElementById('stmt'));
     const h2Chars = splitText(document.getElementById('h2'));
 
-    paint(h1Chars, 0, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
-    paint(stmtChars, 0, 0.16, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+    paint(h1Chars, 0, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+    paint(stmtChars, 0, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
     paint(h2Chars, 0, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
 
     /* ==========================================================================
@@ -2583,62 +2584,114 @@
       if (prefersReducedMotion) {
         if (row) row.classList.add('visible');
         if (nav) nav.classList.add('on');
-        paint(stmtChars, 1, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+        paint(stmtChars, 1, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
         paint(h2Chars, 1, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
         return;
       }
 
       const scrollY = window.scrollY;
       const vh = window.innerHeight || 800;
-      const q = scrollY / vh;
-
-      // 1. Statement Rise & Reveal (smooth & responsive in both scroll directions)
       const isMobile = window.innerWidth <= 1024;
-      if (stmt && !isMobile) {
-        const s = Math.max(0, Math.min(1, (q - 0.20) / 0.50));
-        const translateY = 0.10 * Math.pow(1 - s, 2) * vh;
-        stmt.style.transform = 'translateY(' + translateY.toFixed(2) + 'px)';
-      } else if (stmt) {
-        stmt.style.transform = 'none';
-      }
 
-      const pStmt = isMobile ? Math.max(0, Math.min(1, (q - 0.10) / 0.50)) : Math.max(0, Math.min(1, (q - 0.15) / 0.80));
-      paint(stmtChars, pStmt, 0.20, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+      // 1. Scene 2: Pinned Statement Reveal (Letter-by-letter sky-blue illumination synchronized to pinned travel)
+      const stmtSec = document.getElementById('statement');
+      if (stmtSec) {
+        const stmtRect = stmtSec.getBoundingClientRect();
+        const pinDist = stmtSec.offsetHeight - vh;
 
-      if (nav) {
-        if (pStmt > 0.35 || scrollY > 180) {
-          nav.classList.add('on');
+        if (!isMobile && pinDist > 0) {
+          // Precise scroll-linked reveal while pinned:
+          // When stmtRect.top > 0 (in hero): rawProgress = 0
+          // As section pins at top=0: rawProgress smoothly sweeps 0.0 -> 1.0
+          const rawProgress = Math.max(0, Math.min(1, (-stmtRect.top) / pinDist));
+
+          // Complete full illumination across 85% of pinned travel, leaving 15% reading buffer before unpinning
+          const pStmt = Math.min(1, rawProgress / 0.85);
+          paint(stmtChars, pStmt, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+
+          // Subtle, luxurious vertical settling (+24px -> 0px) as it pins
+          const translateY = Math.max(0, 24 * (1 - Math.min(1, rawProgress * 2.5)));
+          if (stmt) {
+            stmt.style.transform = `translateY(${translateY.toFixed(1)}px)`;
+          }
+
+          if (nav) {
+            if (rawProgress > 0.05 || scrollY > 140) {
+              nav.classList.add('on');
+            } else {
+              nav.classList.remove('on');
+            }
+          }
         } else {
-          nav.classList.remove('on');
+          // Mobile responsive: smoothly illuminates as section passes viewport
+          const rect = (stmt || stmtSec).getBoundingClientRect();
+          const pMobile = Math.max(0, Math.min(1, (vh * 0.85 - rect.top) / (vh * 0.55)));
+          paint(stmtChars, pMobile, 0.20, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+          if (stmt) stmt.style.transform = 'none';
+
+          if (nav) {
+            if (scrollY > 90) {
+              nav.classList.add('on');
+            } else {
+              nav.classList.remove('on');
+            }
+          }
         }
       }
 
-      // 2. Dark Split Headline & Row (preserves visibility once scrolled into view)
+      // 2. Scene 3: Dark Split Headline, Metrics & Tactical Image Parallax
       if (splitSec) {
         const splitRect = splitSec.getBoundingClientRect();
         const splitTop = splitRect.top;
-        const p2 = Math.max(0, Math.min(1, (0.85 - splitTop / vh) / 0.55));
+
+        // Headline illuminates with cyan sweep as it enters
+        const p2 = Math.max(0, Math.min(1, (vh * 0.85 - splitTop) / (vh * 0.55)));
         paint(h2Chars, p2, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
 
         if (row) {
-          if (p2 > 0.35 || splitTop < vh * 0.70) {
+          if (p2 > 0.25 || splitTop < vh * 0.70) {
             row.classList.add('visible');
+          } else if (splitTop > vh * 0.88) {
+            row.classList.remove('visible');
           }
         }
 
-        // 3. Image Zoom
+        // Tactical image subtle parallax zoom
         if (ship) {
-          const shipT = Math.max(0, Math.min(1, 1 - splitTop / vh));
+          const shipT = Math.max(0, Math.min(1, (vh - splitTop) / (vh * 1.2)));
           const scale = 1.06 - 0.06 * shipT;
-          ship.style.transform = 'scale(' + scale.toFixed(4) + ')';
+          ship.style.transform = `scale(${scale.toFixed(4)})`;
         }
+      }
+
+      // 3. Hero subtle parallax (desktop only)
+      const h1El = document.getElementById('h1');
+      if (!isMobile && scrollY <= vh && h1El) {
+        const heroT = scrollY / vh;
+        h1El.style.transform = `translateY(${(heroT * 30).toFixed(1)}px)`;
+        h1El.style.opacity = Math.max(0.20, 1 - heroT * 0.80).toFixed(2);
+      } else if (h1El) {
+        h1El.style.transform = 'none';
+        h1El.style.opacity = '1';
       }
     }
 
-    // Scroll & Lifecycle Listeners to prevent blank text on load/refresh/resize
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    window.addEventListener('orientationchange', onScroll, { passive: true });
+    // Scroll & Lifecycle Listeners with rAF throttling for 60/120fps hardware synchronization
+    let isScrollTicking = false;
+
+    function requestScrollUpdate() {
+      if (!isScrollTicking) {
+        isScrollTicking = true;
+        requestAnimationFrame(() => {
+          onScroll();
+          isScrollTicking = false;
+        });
+      }
+    }
+
+    window.addEventListener('scroll', requestScrollUpdate, { passive: true });
+    window.addEventListener('resize', requestScrollUpdate, { passive: true });
+    window.addEventListener('orientationchange', requestScrollUpdate, { passive: true });
     window.addEventListener('load', () => {
       onScroll();
       setTimeout(onScroll, 60);
@@ -4144,8 +4197,8 @@
       if (ctx) requestAnimationFrame(renderGlow);
 
       if (prefersReducedMotion) {
-        paint(h1Chars, 1, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
-        paint(stmtChars, 1, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+        paint(h1Chars, 1, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+        paint(stmtChars, 1, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
         paint(h2Chars, 1, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
         row.classList.add('visible');
         nav.classList.add('on');
@@ -4154,7 +4207,7 @@
         function animateH1(now) {
           const elapsed = (now - h1Start) / 1250;
           const p = Math.max(0, Math.min(1, elapsed));
-          paint(h1Chars, p, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+          paint(h1Chars, p, 0.35, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
           if (p < 1) {
             requestAnimationFrame(animateH1);
           }
