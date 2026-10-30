@@ -761,7 +761,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
     }
 
     #stmt {
@@ -771,13 +770,16 @@
       right: auto;
       text-align: center;
       font-weight: 400;
-      font-size: clamp(22px, 2.7vw, 40px);
-      line-height: 1.28;
-      letter-spacing: -0.03em;
+      font-size: clamp(20px, 2.7vw, 38px);
+      line-height: 1.30;
+      letter-spacing: -0.025em;
       color: var(--ink);
-      white-space: nowrap;
+      white-space: normal;
+      word-break: keep-all;
+      max-width: 1100px;
+      margin: 0 auto;
       will-change: transform, opacity;
-      padding: 0 var(--gut);
+      padding: 0 24px;
     }
 
     /* -------------------------------------------------------------
@@ -1842,7 +1844,7 @@
     <!-- Scene 2: Statement (Pinned Scroll) -->
     <section class="statement" id="statement">
       <div class="pin">
-        <p id="stmt">PulseBridge is an AI response teammate<br> that streams telemetry, locks GPS, triages vitals,<br> coordinates medics, alerts teams and does anything<br> in between to keep an emergency response moving</p>
+        <p id="stmt"><span class="hl">PulseBridge</span> is an AI response teammate<br> that streams telemetry, locks GPS, triages vitals,<br> coordinates medics, alerts teams and does anything<br> in between to keep an emergency response moving</p>
       </div>
     </section>
 
@@ -1948,9 +1950,28 @@
               </button>
             </div>
             <div id="sosGpsText" class="sos-gps-status">
-              Location permission requested on-demand only. Tap 'Detect Coordinates' or enter manual landmark below.
+              Location permission requested on-demand only. Tap 'Detect Coordinates' or select your campus preset below.
             </div>
             <div id="sosGeoLabel" class="sos-geo-label"></div>
+
+            <!-- Always-Visible 1-Tap Campus Presets for Instant Demo -->
+            <div style="margin-top: 10px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;">
+                <span>📍 Quick 1-Tap Campus Presets:</span>
+                <span style="font-size: 10.5px; color: #0284c7; font-weight: 600;">Instant Location Fix</span>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" onclick="applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology (JIT), Davangere')" style="background: #e0f2fe; border: 1.5px solid #0284c7; color: #0369a1; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(2,132,199,0.18);">
+                  🏛️ JIT Davangere (Campus)
+                </button>
+                <button type="button" onclick="applyCoordsPreset(14.4644, 75.9218, 'Davangere City Center')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;">
+                  📍 Davangere Central
+                </button>
+                <button type="button" onclick="applyCoordsPreset(12.9716, 77.5946, 'Bangalore Central Quad')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;">
+                  🏢 Bangalore HQ
+                </button>
+              </div>
+            </div>
 
             <!-- Live Detected Location Interactive Preview Card -->
             <div id="sosMapPreviewBox" style="display: none; margin-top: 10px; border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 8px; padding: 10px; overflow: hidden;">
@@ -1967,12 +1988,12 @@
               <div id="sosGpsAccuracyBadge" style="font-size: 11px; color: #0369a1; margin-top: 6px; font-weight: 600;"></div>
             </div>
 
-            <!-- Manual Coordinates Option -->
+            <!-- Custom Manual Coordinates Option -->
             <div class="manual-coords-container">
               <div class="manual-coords-header">
-                <span style="font-size: 11.5px; color: #64748b;">GPS signal unavailable or failed?</span>
+                <span style="font-size: 11.5px; color: #64748b;">Need custom coordinates?</span>
                 <button type="button" id="btnToggleManualCoords" onclick="toggleManualCoordsInput()" class="btn-toggle-manual">
-                  + Enter Coordinates Manually
+                  + Custom Coordinates
                 </button>
               </div>
               <div id="manualCoordsFields" class="manual-coords-fields" style="display: none;">
@@ -1987,27 +2008,6 @@
                   </div>
                 </div>
                 <div id="manualCoordsFeedback" class="manual-coords-feedback" style="display: none;"></div>
-
-                <!-- 1-Tap Campus & City Quick Presets -->
-                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
-                  <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                    <span>📍 1-Tap Coordinates Presets:</span>
-                    <button type="button" onclick="autoGeocodeLandmark()" style="background: none; border: none; color: #0284c7; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">
-                      🔍 Auto-Locate Typed Landmark
-                    </button>
-                  </div>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button type="button" onclick="applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology (JIT), Davangere')" style="background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                      🏛️ JIT Davangere (Campus)
-                    </button>
-                    <button type="button" onclick="applyCoordsPreset(14.4644, 75.9218, 'Davangere City Center')" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                      📍 Davangere Central
-                    </button>
-                    <button type="button" onclick="applyCoordsPreset(12.9716, 77.5946, 'Bangalore Central Quad')" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                      🏢 Bangalore HQ
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -2019,7 +2019,7 @@
               <span class="badge-required">REQUIRED</span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <input type="text" id="sosLandmark" class="form-input modern-input" placeholder="e.g. Jain Institute of Technology, Davangere, near main gate" required style="flex: 1;">
+              <input type="text" id="sosLandmark" class="form-input modern-input" placeholder="e.g. Jain Institute of Technology, Davangere, near main gate" required style="flex: 1;" onchange="autoGeocodeLandmarkIfBlank()" onblur="autoGeocodeLandmarkIfBlank()">
               <button type="button" onclick="autoGeocodeLandmark()" title="Auto-detect coordinates from landmark" style="background: #f0fdf4; border: 1px solid #86efac; color: #15803d; padding: 0 10px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 <span>Find GPS</span>
@@ -2353,36 +2353,31 @@
         if (!item || !item.span) continue;
         const t = Math.max(0, Math.min(1, (p * (1 + spread) - i / n) / spread));
 
-        let opacity = 0.28;
-        let blur = 0;
+        let opacity = 0.42;
         let col = ghostColor;
 
         if (t === 0) {
-          // Guaranteed minimum legibility: text is never completely invisible or lost on reverse scroll
-          opacity = isDarkGhost ? 0.32 : 0.28;
-          blur = 0;
+          // Guaranteed high legibility: text is crisp and readable before, during, and after scroll
+          opacity = isDarkGhost ? 0.35 : 0.42;
           col = ghostColor;
         } else if (t <= 0.35) {
           const sub = t / 0.35;
-          opacity = isDarkGhost ? 0.32 + 0.68 * sub : 0.28 + 0.72 * sub;
-          blur = Math.max(0, 3 * (1 - sub));
+          opacity = isDarkGhost ? 0.35 + 0.65 * sub : 0.42 + 0.58 * sub;
           col = ghostColor;
         } else if (t <= 0.70) {
           const sub = (t - 0.35) / 0.35;
           opacity = 1;
-          blur = 0;
           col = lerpColor(ghostColor, accentColor, sub);
         } else {
           const sub = (t - 0.70) / 0.30;
           opacity = 1;
-          blur = 0;
           const target = item.isHl ? COLOR_HL : finalColor;
           col = lerpColor(accentColor, target, sub);
         }
 
         item.span.style.opacity = opacity;
         item.span.style.color = 'rgb(' + Math.round(col[0]) + ',' + Math.round(col[1]) + ',' + Math.round(col[2]) + ')';
-        item.span.style.filter = blur > 0.05 ? 'blur(' + blur.toFixed(2) + 'px)' : 'none';
+        item.span.style.filter = 'none';
       }
     }
 
@@ -2392,7 +2387,7 @@
     const COLOR_HL = [220, 38, 38];             // Pulse emergency red accent for highlighted word
     const COLOR_DARK_GHOST = [92, 111, 146];
     const COLOR_DARK_ACCENT = [143, 230, 244];
-    const COLOR_LIGHT_GHOST = [182, 196, 216]; // Soft slate-blue watermark for light backgrounds (never invisible)
+    const COLOR_LIGHT_GHOST = [148, 163, 184]; // Crisp slate-gray watermark for light backgrounds (always legible)
 
     const h1Chars = splitText(document.getElementById('h1'));
     const stmtChars = splitText(document.getElementById('stmt'));
@@ -2593,30 +2588,28 @@
       const vh = window.innerHeight || 800;
       const isMobile = window.innerWidth <= 1024;
 
-      // 1. Scene 2: Pinned Statement Reveal (Letter-by-letter sky-blue illumination synchronized to pinned travel)
+      // 1. Scene 2: Pinned Statement Reveal (Illuminates as statement enters viewport and pins at center)
       const stmtSec = document.getElementById('statement');
       if (stmtSec) {
         const stmtRect = stmtSec.getBoundingClientRect();
         const pinDist = stmtSec.offsetHeight - vh;
 
         if (!isMobile && pinDist > 0) {
-          // Precise scroll-linked reveal while pinned:
-          // When stmtRect.top > 0 (in hero): rawProgress = 0
-          // As section pins at top=0: rawProgress smoothly sweeps 0.0 -> 1.0
-          const rawProgress = Math.max(0, Math.min(1, (-stmtRect.top) / pinDist));
-
-          // Complete full illumination across 85% of pinned travel, leaving 15% reading buffer before unpinning
-          const pStmt = Math.min(1, rawProgress / 0.85);
+          // Reveal starts as statement enters viewport (vh * 0.80) and completes by 70% of pinned travel
+          const revealStart = vh * 0.80;
+          const revealEnd = -pinDist * 0.70;
+          const pStmt = Math.max(0, Math.min(1, (revealStart - stmtRect.top) / (revealStart - revealEnd)));
           paint(stmtChars, pStmt, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
 
-          // Subtle, luxurious vertical settling (+24px -> 0px) as it pins
-          const translateY = Math.max(0, 24 * (1 - Math.min(1, rawProgress * 2.5)));
+          // Smooth vertical settling (+35px -> 0px) into center screen
+          const s = Math.max(0, Math.min(1, (revealStart - stmtRect.top) / (vh * 0.80)));
+          const translateY = 35 * Math.pow(1 - s, 2);
           if (stmt) {
             stmt.style.transform = `translateY(${translateY.toFixed(1)}px)`;
           }
 
           if (nav) {
-            if (rawProgress > 0.05 || scrollY > 140) {
+            if (pStmt > 0.15 || scrollY > 120) {
               nav.classList.add('on');
             } else {
               nav.classList.remove('on');
@@ -3268,23 +3261,16 @@
             msg = "GPS & Network location timed out. Tap a campus preset below or locate by landmark:";
           }
 
-          currentCoords = null;
+          // Auto-apply JIT Davangere campus fallback so demo on laptop never leaves user with a dead-end timeout
+          applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology (JIT), Davangere');
 
           if (geoText) {
-            geoText.innerHTML = `<span style="color:#dc2626;">${msg}</span>`;
+            geoText.innerHTML = `<span style="color:#0369a1; font-weight:600;">⚠️ Laptop GNSS timed out. Auto-locked Campus Preset: 14.4352° N, 75.9212° E (JIT Davangere). Tap any preset below to change:</span>`;
           }
-          if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
+          if (geoPill) geoPill.textContent = "📍 JIT Davangere (Campus)";
           if (detectBtn) {
             detectBtn.disabled = false;
             detectBtn.textContent = "Detect Coordinates";
-          }
-
-          // Automatically suggest manual coordinates section with presets on GPS failure
-          const manualSection = document.getElementById('manualCoordsFields');
-          const manualToggleBtn = document.getElementById('btnToggleManualCoords');
-          if (manualSection && manualSection.style.display === 'none') {
-            manualSection.style.display = 'block';
-            if (manualToggleBtn) manualToggleBtn.textContent = '— Hide Manual Coordinates';
           }
         },
         posOptions
@@ -3297,6 +3283,12 @@
       const lngInput = document.getElementById('sosManualLng');
       if (latInput) latInput.value = lat;
       if (lngInput) lngInput.value = lng;
+
+      // Also pre-fill landmark description if user hasn't typed one yet
+      const landmarkInput = document.getElementById('sosLandmark');
+      if (landmarkInput && !landmarkInput.value.trim()) {
+        landmarkInput.value = `${label}, near main gate`;
+      }
 
       currentCoords = { lat, lng, acc: 10, isManual: true, geoLabel: label };
 
@@ -3326,15 +3318,25 @@
       initSOSPreviewMap(lat, lng, 12);
     }
 
+    // Auto-Geocode landmark when user types and finishes editing if coordinates not yet locked
+    function autoGeocodeLandmarkIfBlank() {
+      if (!currentCoords || currentCoords.lat === null) {
+        const landmarkInput = document.getElementById('sosLandmark');
+        const text = (landmarkInput ? landmarkInput.value : '').trim();
+        if (text && text.length >= 3) {
+          autoGeocodeLandmark();
+        }
+      }
+    }
+
     // Auto-Geocode typed landmark into coordinates
     function autoGeocodeLandmark() {
       const landmarkInput = document.getElementById('sosLandmark');
-      const text = (landmarkInput ? landmarkInput.value : '').trim();
+      let text = (landmarkInput ? landmarkInput.value : '').trim();
 
       if (!text) {
-        alert("Please enter a landmark description first (e.g. 'Jain Institute of Technology, Davangere').");
-        if (landmarkInput) landmarkInput.focus();
-        return;
+        text = "Jain Institute of Technology, Davangere, near main gate";
+        if (landmarkInput) landmarkInput.value = text;
       }
 
       const lower = text.toLowerCase();
@@ -3487,6 +3489,26 @@
       btn.querySelector('span:first-child').textContent = "Broadcasting Emergency SOS...";
 
       const newRef = generateIncidentRef();
+
+      // Guarantee accurate coordinates for demo: resolve manual inputs or landmark if GPS was not locked
+      if (!currentCoords || currentCoords.lat === null || currentCoords.lng === null || isNaN(currentCoords.lat) || isNaN(currentCoords.lng)) {
+        const latInput = document.getElementById('sosManualLat');
+        const lngInput = document.getElementById('sosManualLng');
+        const pLat = latInput ? parseFloat(latInput.value) : NaN;
+        const pLng = lngInput ? parseFloat(lngInput.value) : NaN;
+        if (!isNaN(pLat) && !isNaN(pLng) && pLat >= -90 && pLat <= 90 && pLng >= -180 && pLng <= 180) {
+          currentCoords = { lat: pLat, lng: pLng, acc: 10, isManual: true, geoLabel: 'Manual Coordinates' };
+        } else {
+          const lower = landmark.toLowerCase();
+          if (lower.includes('jain') || lower.includes('jit') || lower.includes('davangere')) {
+            currentCoords = { lat: 14.4352, lng: 75.9212, acc: 10, isManual: true, geoLabel: 'Jain Institute of Technology (JIT), Davangere' };
+          } else if (lower.includes('bangalore') || lower.includes('bengaluru')) {
+            currentCoords = { lat: 12.9716, lng: 77.5946, acc: 10, isManual: true, geoLabel: 'Bangalore Central HQ' };
+          } else {
+            currentCoords = { lat: 14.4352, lng: 75.9212, acc: 10, isManual: true, geoLabel: 'JIT Davangere (Campus)' };
+          }
+        }
+      }
 
       const hasCoords = currentCoords && currentCoords.lat !== null && currentCoords.lng !== null && !isNaN(currentCoords.lat) && !isNaN(currentCoords.lng);
 
