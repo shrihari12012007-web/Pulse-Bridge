@@ -40,7 +40,7 @@
     }
 
     html {
-      overflow-x: hidden;
+      overflow-x: clip;
     }
 
     body {
@@ -49,7 +49,7 @@
       font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
+      overflow-x: clip;
       min-height: 100vh;
     }
 
@@ -2616,13 +2616,7 @@
           const pStmt = Math.min(1.0, rawProgress / 0.50);
           paint(stmtChars, pStmt, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
 
-          // Subtle settling (+18px -> 0px) as it pins
-          if (stmtRect.top > 0) {
-            const entrance = Math.max(0, Math.min(1, (vh * 0.5 - stmtRect.top) / (vh * 0.5)));
-            if (stmt) stmt.style.transform = `translateY(${(18 * (1 - entrance)).toFixed(1)}px)`;
-          } else {
-            if (stmt) stmt.style.transform = 'none';
-          }
+          if (stmt) stmt.style.transform = 'none';
 
           if (nav) {
             if (rawProgress > 0.05 || scrollY > 120) {
@@ -2708,26 +2702,7 @@
     });
     window.addEventListener('pageshow', onScroll);
 
-    // Viewport IntersectionObserver to guarantee timely reveals across all layouts
-    if ('IntersectionObserver' in window) {
-      const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onScroll();
-          }
-        });
-      }, {
-        root: null,
-        threshold: [0, 0.2, 0.5, 0.8]
-      });
-
-      const sHero = document.getElementById('hero');
-      const sStmt = document.getElementById('statement');
-      const sSplit = document.getElementById('split');
-      if (sHero) revealObserver.observe(sHero);
-      if (sStmt) revealObserver.observe(sStmt);
-      if (sSplit) revealObserver.observe(sSplit);
-    }
+    // High-performance scroll updates handled cleanly by rAF-throttled scroll listener
 
     /* ==========================================================================
        PULSEBRIDGE CORE APPLICATION LOGIC & STORE
