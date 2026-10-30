@@ -453,43 +453,223 @@
       border-color: var(--ink);
     }
 
-    /* 4x2 Logo grid */
-    .logos {
+    /* -------------------------------------------------------------
+       HERO FEATURE CARDS (5 SYMMETRICAL COORDINATION ELEMENTS)
+       ------------------------------------------------------------- */
+    .hero-features {
       position: absolute;
-      right: 0;
-      width: 50%;
-      top: 55vh;
-      bottom: 0;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, 1fr);
+      right: var(--gut);
+      top: 18vh;
+      bottom: 8vh;
+      width: 45%;
+      max-width: 610px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      z-index: 10;
     }
 
-    .logo-cell {
+    .hero-features-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0369a1;
+      background: rgba(224, 242, 254, 0.85);
+      border: 1px solid rgba(186, 230, 253, 0.95);
+      padding: 5px 12px;
+      border-radius: 999px;
+      width: fit-content;
+      margin-bottom: 2px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
+    }
+
+    .hero-features-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0284c7;
+      box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 6px rgba(2, 132, 199, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+      }
+    }
+
+    .hero-features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(11, 29, 58, 0.1);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 16px -2px rgba(11, 29, 58, 0.05);
+      position: relative;
+      text-align: left;
+      user-select: none;
+    }
+
+    .feature-card:hover {
+      background: rgba(255, 255, 255, 0.98);
+      border-color: rgba(2, 132, 199, 0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px -4px rgba(2, 132, 199, 0.15), 0 2px 6px rgba(11, 29, 58, 0.06);
+    }
+
+    .feature-card:focus-visible {
+      outline: 2px solid #0284c7;
+      outline-offset: 2px;
+    }
+
+    .feature-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .feature-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #3e4d68;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      border-left: 1px solid rgba(11,29,58,.08);
-      position: relative;
+      flex-shrink: 0;
     }
 
-    .logo-cell:nth-child(n+5) {
-      border-top: 1px solid rgba(11,29,58,.06);
+    .feature-icon-box.icon-cyan {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
     }
 
-    .logo-cell .mark {
+    .feature-icon-box.icon-red {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .feature-icon-box.icon-green {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .feature-icon-box.icon-rose {
+      background: #ffe4e6;
+      color: #e11d48;
+      border: 1px solid #fecdd3;
+    }
+
+    .feature-icon-box.icon-purple {
+      background: #ede9fe;
+      color: #7c3aed;
+      border: 1px solid #ddd6fe;
+    }
+
+    .feature-pill {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 2px 7px;
+      border-radius: 999px;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 4px;
     }
 
-    .logo-cell svg {
-      height: 20px;
-      display: block;
+    .feature-pill.pill-cyan {
+      background: #f0f9ff;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .feature-pill.pill-red {
+      background: #fff1f2;
+      color: #be123c;
+      border: 1px solid #fecdd3;
+    }
+
+    .feature-pill.pill-green {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .feature-pill.pill-rose {
+      background: #fff1f2;
+      color: #9f1239;
+      border: 1px solid #fecdd3;
+    }
+
+    .feature-pill.pill-purple {
+      background: #f5f3ff;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+    }
+
+    .feature-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .feature-arrow {
+      color: #94a3b8;
+      font-size: 12px;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .feature-card:hover .feature-arrow {
+      transform: translateX(3px);
+      color: #0284c7;
+    }
+
+    .feature-desc {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.35;
+    }
+
+    .feature-card.full-width {
+      grid-column: span 2;
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+    }
+
+    .feature-card.full-width .feature-content {
+      flex: 1;
     }
 
     .fade-up {
@@ -742,6 +922,394 @@
       padding: 28px;
     }
 
+    /* -------------------------------------------------------------
+       EMERGENCY SOS FORM REDESIGN (CLEAN PROFESSIONAL EMERGENCY UI)
+       ------------------------------------------------------------- */
+    .sos-modal-card {
+      max-width: 580px;
+      width: 100%;
+      max-height: 90vh;
+      border-radius: 20px;
+      padding: 0 !important;
+      overflow: hidden !important;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      box-shadow: 0 25px 60px -15px rgba(11, 29, 58, 0.35);
+      border: 1px solid rgba(11, 29, 58, 0.12);
+    }
+
+    .sos-modal-header {
+      padding: 18px 24px 14px;
+      background: #ffffff;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .sos-header-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sos-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0b1d3a;
+      letter-spacing: -0.02em;
+    }
+
+    .sos-modal-subtitle {
+      font-size: 11.5px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .sos-close-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: #64748b;
+      transition: all 0.15s ease;
+    }
+
+    .sos-close-btn:hover {
+      background: #e2e8f0;
+      color: #0b1d3a;
+    }
+
+    .sos-form-wrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sos-modal-body {
+      padding: 18px 24px 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sos-alert-banner {
+      background: #fff1f2;
+      border: 1.5px solid #fecdd3;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sos-banner-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .sos-banner-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #9f1239;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .call-112-pill {
+      background: #dc2626;
+      color: #ffffff;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .call-112-pill:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .sos-banner-text {
+      font-size: 11.5px;
+      color: #881337;
+      line-height: 1.45;
+    }
+
+    .sos-error-box {
+      display: none;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .badge-required {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #dc2626;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .badge-optional {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .badge-ondemand {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #0284c7;
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .modern-input {
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      padding: 10px 14px !important;
+      font-size: 13.5px !important;
+      color: #0b1d3a !important;
+      transition: all 0.18s ease !important;
+      background: #ffffff !important;
+    }
+
+    .modern-input:focus {
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12) !important;
+    }
+
+    .form-field-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    /* GPS Telemetry Card */
+    .sos-gps-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sos-gps-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .sos-gps-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .btn-detect-gps {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+    }
+
+    .btn-detect-gps:hover:not(:disabled) {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    .btn-detect-gps:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .sos-gps-status {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    .sos-geo-label {
+      display: none;
+      font-size: 11.5px;
+      color: #0369a1;
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    .manual-coords-container {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .manual-coords-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-toggle-manual {
+      background: none;
+      border: none;
+      color: #0284c7;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .btn-toggle-manual:hover {
+      color: #0369a1;
+    }
+
+    .manual-coords-fields {
+      margin-top: 8px;
+    }
+
+    .manual-coords-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .manual-sublabel {
+      font-size: 10.5px;
+      color: #475569;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .manual-input {
+      padding: 6px 10px !important;
+      font-size: 12px !important;
+    }
+
+    .manual-coords-feedback {
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    /* Medical Profile Toggle Card */
+    .sos-medical-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      padding: 12px 14px;
+      border-radius: 12px;
+      gap: 12px;
+    }
+
+    .medical-card-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #166534;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .medical-card-desc {
+      font-size: 11px;
+      color: #15803d;
+      margin-top: 2px;
+    }
+
+    /* Sticky Footer */
+    .sos-modal-footer {
+      padding: 14px 24px 18px;
+      background: #ffffff;
+      border-top: 1px solid #f1f5f9;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 -4px 12px rgba(11, 29, 58, 0.03);
+    }
+
+    .sos-submit-btn {
+      width: 100% !important;
+      justify-content: center !important;
+      height: 48px !important;
+    }
+
+    .sos-footer-disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+
     .modal-card.dark {
       background: #0f172a;
       color: #ffffff;
@@ -899,35 +1467,83 @@
         margin-left: 6px;
       }
 
+      .hero {
+        height: auto;
+        min-height: 100vh;
+        padding-top: 96px;
+        padding-bottom: 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+      }
+
       #h1 {
-        top: 16vh;
-        font-size: clamp(28px, 6.5vw, 52px);
+        position: relative;
+        top: auto;
+        left: auto;
+        font-size: clamp(28px, 6vw, 46px);
         white-space: normal;
-        padding-right: var(--gut);
+        padding-right: 0;
+        max-width: 100%;
+        margin-bottom: 14px;
       }
 
       .trust {
-        top: 43vh;
-      }
-
-      .logos {
-        width: 100%;
-        left: 0;
-        right: 0;
-        top: 52vh;
-        bottom: 18vh;
-      }
-
-      .logo-cell span {
-        display: none !important;
-      }
-
-      .logo-cell svg {
-        height: 18px;
+        position: relative;
+        top: auto;
+        left: auto;
+        max-width: 100%;
+        margin-bottom: 20px;
       }
 
       .hero-actions {
-        bottom: 5vh;
+        position: relative;
+        bottom: auto;
+        left: auto;
+        width: 100%;
+        margin-bottom: 28px;
+      }
+
+      .hero-features {
+        position: relative;
+        right: auto;
+        top: auto;
+        bottom: auto;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .hero-features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-card.full-width {
+        grid-column: span 1;
+      }
+
+      @media (min-width: 640px) and (max-width: 1024px) {
+        .hero-features-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .feature-card.full-width {
+          grid-column: span 2;
+        }
+      }
+
+      .sos-modal-card {
+        max-height: 94vh;
+      }
+
+      .sos-modal-header {
+        padding: 14px 16px;
+      }
+
+      .sos-modal-body {
+        padding: 14px 16px;
+      }
+
+      .sos-modal-footer {
+        padding: 12px 16px 16px;
       }
 
       #stmt {
@@ -1056,82 +1672,98 @@
         </button>
       </div>
 
-      <!-- Partner Wordmarks (Emergency Coordination Ecosystem) -->
-      <div class="logos">
-        <!-- 1. 108 EMS -->
-        <div class="logo-cell fade-up" style="--d: 1.25s">
-          <div class="mark">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            </svg>
-            <span>108 EMS</span>
-          </div>
+      <!-- 5 Meaningful Emergency-Response Feature Elements (Replacing scattered labels) -->
+      <div class="hero-features fade-up" style="--d: 1.25s">
+        <div class="hero-features-badge">
+          <span class="hero-features-pulse"></span>
+          <span>Emergency Coordination Suite</span>
+          <span style="opacity: 0.6; font-size: 10px; margin-left: 2px;">• Demo Platform</span>
         </div>
 
-        <!-- 2. AIIMS Trauma -->
-        <div class="logo-cell fade-up" style="--d: 1.32s">
-          <div class="mark">
-            <span style="font-family: Georgia, serif; font-weight: bold; font-style: italic; font-size: 14px; letter-spacing: 0.02em;">AIIMS Trauma</span>
+        <div class="hero-features-grid">
+          <!-- 1. GPS Location Tracking -->
+          <div class="feature-card" onclick="openSOSWithGPS()" title="Click to open Emergency SOS with live GPS detection" tabindex="0" role="button">
+            <div class="feature-card-header">
+              <div class="feature-icon-box icon-cyan">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <span class="feature-pill pill-cyan">📍 Sensor GPS</span>
+            </div>
+            <div class="feature-title">
+              <span>GPS Location Tracking</span>
+              <span class="feature-arrow">→</span>
+            </div>
+            <div class="feature-desc">
+              On-demand high-precision sensor coordinates (maxAge: 0) & manual entry fallback.
+            </div>
           </div>
-        </div>
 
-        <!-- 3. NDRF -->
-        <div class="logo-cell fade-up" style="--d: 1.39s">
-          <div class="mark">
-            <svg viewBox="0 0 18 20" fill="currentColor">
-              <polygon points="9,1 17,5 17,11 9,19 1,11 1,5"/>
-            </svg>
-            <span>NDRF</span>
+          <!-- 2. Emergency Response Units -->
+          <div class="feature-card" onclick="openDashboardModal()" title="Click to view active responder units in CAD Console" tabindex="0" role="button">
+            <div class="feature-card-header">
+              <div class="feature-icon-box icon-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M6 8h4M8 6v4"/></svg>
+              </div>
+              <span class="feature-pill pill-red">🚑 Paramedic CAD</span>
+            </div>
+            <div class="feature-title">
+              <span>Emergency Response Units</span>
+              <span class="feature-arrow">→</span>
+            </div>
+            <div class="feature-desc">
+              Paramedic unit assignment, callsign dispatch & rapid life-safety triage.
+            </div>
           </div>
-        </div>
 
-        <!-- 4. RED CROSS -->
-        <div class="logo-cell fade-up" style="--d: 1.46s">
-          <div class="mark">
-            <svg viewBox="0 0 20 20" fill="none">
-              <rect x="7" y="2" width="6" height="16" fill="currentColor"/>
-              <rect x="2" y="7" width="16" height="6" fill="currentColor"/>
-            </svg>
-            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em;">RED CROSS</span>
+          <!-- 3. Incident Status Tracking -->
+          <div class="feature-card" onclick="openTrackingModal()" title="Click to view live milestone progression stepper" tabindex="0" role="button">
+            <div class="feature-card-header">
+              <div class="feature-icon-box icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+              </div>
+              <span class="feature-pill pill-green">📋 Live Stepper</span>
+            </div>
+            <div class="feature-title">
+              <span>Incident Status Tracking</span>
+              <span class="feature-arrow">→</span>
+            </div>
+            <div class="feature-desc">
+              Real-time submission, acknowledgment, unit dispatch & timestamped audit log.
+            </div>
           </div>
-        </div>
 
-        <!-- 5. CIVIL DEF -->
-        <div class="logo-cell fade-up" style="--d: 1.42s">
-          <div class="mark">
-            <span style="font-size: 13px; font-weight: 800; letter-spacing: -0.02em; border: 2px solid currentColor; border-radius: 4px; padding: 2px 7px;">CIVIL DEF</span>
+          <!-- 4. Consent-Based Medical Assistance -->
+          <div class="feature-card" onclick="openMedicalModal()" title="Click to view or edit consented medical profile" tabindex="0" role="button">
+            <div class="feature-card-header">
+              <div class="feature-icon-box icon-rose">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+              </div>
+              <span class="feature-pill pill-rose">❤️ Consented Info</span>
+            </div>
+            <div class="feature-title">
+              <span>Consent Medical Assistance</span>
+              <span class="feature-arrow">→</span>
+            </div>
+            <div class="feature-desc">
+              Encrypted blood group, critical allergies & asthma/cardiac medication flags.
+            </div>
           </div>
-        </div>
 
-        <!-- 6. ST. JOHN -->
-        <div class="logo-cell fade-up" style="--d: 1.49s">
-          <div class="mark">
-            <svg viewBox="0 0 18 20" fill="none">
-              <path d="M3 2v16M15 2v16M3 10h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            </svg>
-            <span>ST. JOHN</span>
-          </div>
-        </div>
-
-        <!-- 7. CAD TRIAGE -->
-        <div class="logo-cell fade-up" style="--d: 1.56s">
-          <div class="mark">
-            <svg viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2"/>
-              <circle cx="10" cy="10" r="2.2" fill="currentColor"/>
-            </svg>
-            <span style="font-size: 13px; font-weight: 600;">CAD-TRIAGE</span>
-          </div>
-        </div>
-
-        <!-- 8. DISASTER RES -->
-        <div class="logo-cell fade-up" style="--d: 1.63s">
-          <div class="mark">
-            <svg viewBox="0 0 20 18" fill="currentColor">
-              <polygon points="10,2 19,16 1,16"/>
-              <polygon points="14,8 19,16 9,16" opacity="0.65"/>
-            </svg>
-            <span style="font-size: 11px; letter-spacing: 0.2em;">DISASTER</span>
+          <!-- 5. Responder Coordination (Full-width spanning) -->
+          <div class="feature-card full-width" onclick="openDashboardModal()" title="Click to open authorized CAD dispatch console" tabindex="0" role="button">
+            <div class="feature-icon-box icon-purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+            </div>
+            <div class="feature-content">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                <span class="feature-title" style="margin: 0;">Responder Coordination Console</span>
+                <span class="feature-pill pill-purple">📡 CAD Operations</span>
+              </div>
+              <div class="feature-desc">
+                Multi-role triage console with unit dispatch, live Leaflet incident mapping, and clinical handover resolution.
+              </div>
+            </div>
+            <span class="feature-arrow" style="font-size: 16px; margin-left: 6px;">→</span>
           </div>
         </div>
       </div>
@@ -1173,123 +1805,158 @@
   </main>
 
   <!-- =============================================================
-       MODAL 1: EMERGENCY SOS BROADCAST WORKFLOW
+       MODAL 1: EMERGENCY SOS BROADCAST WORKFLOW (REDESIGNED)
        ============================================================= -->
   <div class="modal-backdrop" id="sosModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <div class="modal-title" style="color: var(--sos-red); display: flex; align-items: center; gap: 8px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            Broadcast Emergency SOS
+    <div class="modal-card sos-modal-card">
+      
+      <!-- Sticky Header -->
+      <div class="sos-modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="sos-header-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </div>
-          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-            Immediate assistance request with GPS & consented vitals
+          <div>
+            <div class="sos-modal-title">Broadcast Emergency SOS</div>
+            <div class="sos-modal-subtitle">Direct emergency assistance request with GPS & consented vitals</div>
           </div>
         </div>
-        <button class="modal-close" onclick="closeModal('sosModal')">&times;</button>
+        <button class="sos-close-btn" onclick="closeModal('sosModal')" aria-label="Close emergency SOS modal">&times;</button>
       </div>
 
-      <!-- Confirmation safeguard banner -->
-      <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 12.5px; color: #991b1b; display: flex; gap: 8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        <div>
-          <strong>Accidental Alert Protection:</strong> Once confirmed, this signal alerts active response teams. If someone is severely injured, dial <strong>112</strong> immediately.
-        </div>
-      </div>
-
-      <!-- Quick 112 Dial Shortcut -->
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #fff1f2; border: 1px solid #ffe4e6; padding: 8px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;">
-        <span style="color: #9f1239; font-weight: 600;">Immediate life threat or unconscious?</span>
-        <a href="tel:112" style="background: #dc2626; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-          Call 112 Now
-        </a>
-      </div>
-
-      <!-- Validation / Status Error Banner -->
-      <div id="sosErrorMsg" style="display: none; background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
-
-      <form id="sosForm" onsubmit="handleSOSSubmit(event)">
-        <!-- Incident Type -->
-        <div class="form-group">
-          <label class="form-label">Incident Type *</label>
-          <select id="sosType" class="form-select" required>
-            <option value="medical_emergency">Medical Emergency (Heart, Asthma, Stroke)</option>
-            <option value="injury">Physical Injury / Fall / Fracture</option>
-            <option value="accident">Road / Vehicle / Machinery Accident</option>
-            <option value="other">Other Life-Safety Incident</option>
-          </select>
-        </div>
-
-        <!-- Geolocation Telemetry (Strictly on user request) -->
-        <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span class="form-label" style="margin-bottom:0;">Live GPS Telemetry (On-Demand)</span>
-            <button type="button" id="btnDetectCoords" onclick="acquireLiveLocation()" style="font-size: 11px; background: #0284c7; color: #fff; border:none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-              Detect Coordinates
-            </button>
+      <!-- Form Wrapping Scrollable Body & Sticky Footer -->
+      <form id="sosForm" onsubmit="handleSOSSubmit(event)" class="sos-form-wrapper">
+        
+        <!-- Scrollable Form Body -->
+        <div class="sos-modal-body">
+          
+          <!-- Accidental Alert Safeguard & Quick 112 Banner -->
+          <div class="sos-alert-banner">
+            <div class="sos-banner-top">
+              <div class="sos-banner-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Accidental Alert Protection</span>
+              </div>
+              <a href="tel:112" class="call-112-pill" title="Dial National Emergency 112 directly">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>Call 112 Now</span>
+              </a>
+            </div>
+            <div class="sos-banner-text">
+              Once submitted, your incident is broadcast to responder dispatch. If there is immediate loss of consciousness, severe trauma, or cardiac arrest, dial <strong>112</strong> immediately.
+            </div>
           </div>
-          <div id="sosGpsText" style="font-size: 12px; color: #64748b; line-height: 1.4;">
-            Location permission requested on-demand only. Tap 'Detect Coordinates' or enter manual landmark below.
-          </div>
-          <div id="sosGeoLabel" style="display: none; font-size: 11.5px; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; margin-top: 6px;"></div>
 
-          <!-- Manual Coordinates Option (if GPS fails or user has known coordinates) -->
-          <div style="margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 11px; color: #64748b;">GPS unavailable or failed?</span>
-              <button type="button" id="btnToggleManualCoords" onclick="toggleManualCoordsInput()" style="background:none; border:none; color:#0284c7; font-size:11px; font-weight:600; cursor:pointer; text-decoration:underline;">
-                + Enter Coordinates Manually
+          <!-- Validation / Status Error Banner -->
+          <div id="sosErrorMsg" class="sos-error-box"></div>
+
+          <!-- Incident Type -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="field-label-row">
+              <label class="form-label" for="sosType">Incident Type</label>
+              <span class="badge-required">REQUIRED</span>
+            </div>
+            <select id="sosType" class="form-select modern-input" required>
+              <option value="medical_emergency">Medical Emergency (Heart, Asthma, Stroke, Unconscious)</option>
+              <option value="injury">Physical Injury / Fall / Fracture / Severe Bleeding</option>
+              <option value="accident">Road / Vehicle / Machinery / Industrial Accident</option>
+              <option value="other">Other Life-Safety & Urgent Rapid Response Incident</option>
+            </select>
+          </div>
+
+          <!-- Geolocation Telemetry Section -->
+          <div class="sos-gps-card">
+            <div class="sos-gps-header">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="sos-gps-title">Live GPS Telemetry</span>
+                <span class="badge-ondemand">ON-DEMAND</span>
+              </div>
+              <button type="button" id="btnDetectCoords" onclick="acquireLiveLocation()" class="btn-detect-gps">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                <span>Detect Coordinates</span>
               </button>
             </div>
-            <div id="manualCoordsFields" style="display: none; margin-top: 8px;">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <div>
-                  <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">Latitude (-90 to 90)</label>
-                  <input type="number" step="any" id="sosManualLat" class="form-input" style="padding: 6px 10px; font-size: 12px;" placeholder="e.g. 14.4644" oninput="handleManualCoordsInput()">
+            <div id="sosGpsText" class="sos-gps-status">
+              Location permission requested on-demand only. Tap 'Detect Coordinates' or enter manual landmark below.
+            </div>
+            <div id="sosGeoLabel" class="sos-geo-label"></div>
+
+            <!-- Manual Coordinates Option -->
+            <div class="manual-coords-container">
+              <div class="manual-coords-header">
+                <span style="font-size: 11.5px; color: #64748b;">GPS signal unavailable or failed?</span>
+                <button type="button" id="btnToggleManualCoords" onclick="toggleManualCoordsInput()" class="btn-toggle-manual">
+                  + Enter Coordinates Manually
+                </button>
+              </div>
+              <div id="manualCoordsFields" class="manual-coords-fields" style="display: none;">
+                <div class="manual-coords-grid">
+                  <div>
+                    <label class="manual-sublabel" for="sosManualLat">Latitude (-90 to 90)</label>
+                    <input type="number" step="any" id="sosManualLat" class="form-input manual-input modern-input" placeholder="e.g. 14.4644" oninput="handleManualCoordsInput()">
+                  </div>
+                  <div>
+                    <label class="manual-sublabel" for="sosManualLng">Longitude (-180 to 180)</label>
+                    <input type="number" step="any" id="sosManualLng" class="form-input manual-input modern-input" placeholder="e.g. 75.9218" oninput="handleManualCoordsInput()">
+                  </div>
                 </div>
-                <div>
-                  <label style="font-size: 10.5px; color: #475569; display: block; margin-bottom: 2px;">Longitude (-180 to 180)</label>
-                  <input type="number" step="any" id="sosManualLng" class="form-input" style="padding: 6px 10px; font-size: 12px;" placeholder="e.g. 75.9218" oninput="handleManualCoordsInput()">
+                <div id="manualCoordsFeedback" class="manual-coords-feedback" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Landmark Description -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="field-label-row">
+              <label class="form-label" for="sosLandmark">Landmark / Floor / Room Description</label>
+              <span class="badge-required">REQUIRED</span>
+            </div>
+            <input type="text" id="sosLandmark" class="form-input modern-input" placeholder="e.g. Science Block 3, 2nd Floor Lab 204 near staircase" required>
+            <div class="form-field-hint">Essential for responders to locate caller indoors or if satellite signal is obstructed.</div>
+          </div>
+
+          <!-- Optional Emergency Description -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="field-label-row">
+              <label class="form-label" for="sosDesc">Emergency Description</label>
+              <span class="badge-optional">OPTIONAL</span>
+            </div>
+            <textarea id="sosDesc" class="form-textarea modern-input" rows="2" placeholder="Brief triage notes: patient conscious, difficulty breathing, bleeding controlled..."></textarea>
+          </div>
+
+          <!-- Consented Medical Info Toggle -->
+          <div class="sos-medical-card">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: #dcfce7; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #16a34a;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+              </div>
+              <div>
+                <div class="medical-card-title">Attach Consented Medical Profile</div>
+                <div class="medical-card-desc" id="attachedMedicalSummary">
+                  Includes: O+ Blood, Penicillin Allergy, Salbutamol
                 </div>
               </div>
-              <div id="manualCoordsFeedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
             </div>
+            <input type="checkbox" id="sosIncludeMedical" checked style="width: 20px; height: 20px; accent-color: #16a34a; cursor: pointer; flex-shrink: 0;">
           </div>
         </div>
 
-        <!-- Landmark Fallback -->
-        <div class="form-group">
-          <label class="form-label">Landmark / Floor / Room Description *</label>
-          <input type="text" id="sosLandmark" class="form-input" placeholder="e.g. Science Block 3, 2nd Floor Lab 204 near staircase" required>
-        </div>
-
-        <!-- Optional Description -->
-        <div class="form-group">
-          <label class="form-label">Emergency Description (Optional)</label>
-          <textarea id="sosDesc" class="form-textarea" rows="2" placeholder="Brief triage notes: patient conscious, difficulty breathing..."></textarea>
-        </div>
-
-        <!-- Consented Medical Info Toggle -->
-        <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 10px;">
-          <div>
-            <div style="font-size: 13px; font-weight: 600; color: #166534;">Attach Consented Medical Profile</div>
-            <div style="font-size: 11px; color: #15803d;" id="attachedMedicalSummary">
-              Includes: O+ Blood, Penicillin Allergy, Salbutamol
-            </div>
+        <!-- Sticky Footer with Submit Button -->
+        <div class="sos-modal-footer">
+          <button type="submit" id="btnConfirmSOS" class="btn lg sos sos-submit-btn">
+            <span>Confirm & Broadcast SOS</span>
+            <span class="dot">
+              <svg class="chevron" viewBox="0 0 12 12" fill="none">
+                <path d="M4.5 2.5 8 6l-3.5 3.5" stroke="#0b1d3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+          <div class="sos-footer-disclaimer">
+            🔒 Secure Local Dispatch Sandbox • Broadcast records in audit trail • Does not replace official 112
           </div>
-          <input type="checkbox" id="sosIncludeMedical" checked style="width: 18px; height: 18px; accent-color: #16a34a;">
         </div>
 
-        <button type="submit" id="btnConfirmSOS" class="btn lg sos" style="width: 100%; justify-content: center; margin-top: 8px;">
-          <span>Confirm & Broadcast SOS</span>
-          <span class="dot">
-            <svg class="chevron" viewBox="0 0 12 12" fill="none">
-              <path d="M4.5 2.5 8 6l-3.5 3.5" stroke="#0b1d3a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-        </button>
       </form>
     </div>
   </div>
@@ -2065,7 +2732,25 @@
       if (manualLng) manualLng.value = '';
       if (manualFeedback) manualFeedback.style.display = 'none';
 
+      // Ensure submit button is active
+      const submitBtn = document.getElementById('btnConfirmSOS');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        const lbl = submitBtn.querySelector('span:first-child');
+        if (lbl) lbl.textContent = "Confirm & Broadcast SOS";
+      }
+
       openModal('sosModal');
+    }
+
+    function openSOSWithGPS() {
+      openSOSModal();
+      // On demand GPS trigger directly from feature card
+      setTimeout(() => {
+        acquireLiveLocation();
+      }, 250);
     }
 
     function toggleManualCoordsInput() {
@@ -2958,6 +3643,16 @@
     /* ==========================================================================
        INITIALIZATION
        ========================================================================== */
+    // Enable keyboard activation for feature cards
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
+        }
+      });
+    });
+
     requestAnimationFrame((time) => {
       document.body.classList.add('ready');
       if (ctx) requestAnimationFrame(renderGlow);
