@@ -1979,14 +1979,35 @@
                 <div class="manual-coords-grid">
                   <div>
                     <label class="manual-sublabel" for="sosManualLat">Latitude (-90 to 90)</label>
-                    <input type="number" step="any" id="sosManualLat" class="form-input manual-input modern-input" placeholder="e.g. 14.4644" oninput="handleManualCoordsInput()">
+                    <input type="number" step="any" id="sosManualLat" class="form-input manual-input modern-input" placeholder="e.g. 14.4352" oninput="handleManualCoordsInput()">
                   </div>
                   <div>
                     <label class="manual-sublabel" for="sosManualLng">Longitude (-180 to 180)</label>
-                    <input type="number" step="any" id="sosManualLng" class="form-input manual-input modern-input" placeholder="e.g. 75.9218" oninput="handleManualCoordsInput()">
+                    <input type="number" step="any" id="sosManualLng" class="form-input manual-input modern-input" placeholder="e.g. 75.9212" oninput="handleManualCoordsInput()">
                   </div>
                 </div>
                 <div id="manualCoordsFeedback" class="manual-coords-feedback" style="display: none;"></div>
+
+                <!-- 1-Tap Campus & City Quick Presets -->
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                  <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>📍 1-Tap Coordinates Presets:</span>
+                    <button type="button" onclick="autoGeocodeLandmark()" style="background: none; border: none; color: #0284c7; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">
+                      🔍 Auto-Locate Typed Landmark
+                    </button>
+                  </div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" onclick="applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology (JIT), Davangere')" style="background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                      🏛️ JIT Davangere (Campus)
+                    </button>
+                    <button type="button" onclick="applyCoordsPreset(14.4644, 75.9218, 'Davangere City Center')" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                      📍 Davangere Central
+                    </button>
+                    <button type="button" onclick="applyCoordsPreset(12.9716, 77.5946, 'Bangalore Central Quad')" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                      🏢 Bangalore HQ
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1997,8 +2018,14 @@
               <label class="form-label" for="sosLandmark">Landmark / Floor / Room Description</label>
               <span class="badge-required">REQUIRED</span>
             </div>
-            <input type="text" id="sosLandmark" class="form-input modern-input" placeholder="e.g. Science Block 3, 2nd Floor Lab 204 near staircase" required>
-            <div class="form-field-hint">Essential for responders to locate caller indoors or if satellite signal is obstructed.</div>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="sosLandmark" class="form-input modern-input" placeholder="e.g. Jain Institute of Technology, Davangere, near main gate" required style="flex: 1;">
+              <button type="button" onclick="autoGeocodeLandmark()" title="Auto-detect coordinates from landmark" style="background: #f0fdf4; border: 1px solid #86efac; color: #15803d; padding: 0 10px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span>Find GPS</span>
+              </button>
+            </div>
+            <div class="form-field-hint">Essential for responders to locate caller indoors or if satellite signal is obstructed. Click "Find GPS" to resolve coordinates.</div>
           </div>
 
           <!-- Optional Emergency Description -->
@@ -2890,7 +2917,14 @@
       }
 
       const icon = createPatientBeaconIcon('Medical Emergency');
-      L.marker([lat, lng], { icon }).addTo(sosLeafletMap);
+      const marker = L.marker([lat, lng], { icon }).addTo(sosLeafletMap);
+
+      // Allow clicking anywhere on the preview map to reposition pin
+      sosLeafletMap.on('click', function(e) {
+        const clickLat = parseFloat(e.latlng.lat.toFixed(6));
+        const clickLng = parseFloat(e.latlng.lng.toFixed(6));
+        applyCoordsPreset(clickLat, clickLng, 'Pinned Location on Map');
+      });
 
       setTimeout(() => {
         if (sosLeafletMap) sosLeafletMap.invalidateSize();
@@ -3083,8 +3117,8 @@
       initSOSPreviewMap(lat, lng, null);
     }
 
-    // Geolocation Handling (Requested strictly on user action)
-    function acquireLiveLocation() {
+    // Intelligent Cascading Geolocation (High-Accuracy GNSS -> Standard Wi-Fi Positioning -> Presets)
+    function acquireLiveLocation(retryStandard = false) {
       const geoText = document.getElementById('sosGpsText');
       const geoPill = document.getElementById('geoIndicator');
       const detectBtn = document.getElementById('btnDetectCoords');
@@ -3092,12 +3126,12 @@
 
       if (detectBtn) {
         detectBtn.disabled = true;
-        detectBtn.textContent = "Acquiring...";
+        detectBtn.textContent = retryStandard ? "Detecting (Wi-Fi)..." : "Acquiring GPS...";
       }
 
       if (!navigator.geolocation) {
         if (geoText) {
-          geoText.textContent = "Geolocation is not supported by your browser. Please enter manual coordinates or landmark description below.";
+          geoText.textContent = "Geolocation is not supported by your browser. Please select a quick preset or enter coordinates below.";
           geoText.style.color = "#b45309";
         }
         if (geoPill) geoPill.textContent = "📍 GPS Unsupported";
@@ -3109,13 +3143,20 @@
       }
 
       if (geoText) {
-        geoText.textContent = "Querying device GPS sensor with high accuracy (maxAge: 0)...";
+        geoText.textContent = retryStandard 
+          ? "Satellite GNSS timed out on device. Falling back to Wi-Fi / IP geolocation..."
+          : "Querying device GPS sensor with high accuracy...";
         geoText.style.color = "#0284c7";
       }
-      if (geoPill) geoPill.textContent = "📍 Acquiring GPS...";
+      if (geoPill) geoPill.textContent = retryStandard ? "📍 Wi-Fi Locate..." : "📍 Acquiring GPS...";
 
-      // Clear any prior coordinate object to ensure freshness
       currentCoords = null;
+
+      // Stage 1: High accuracy satellite GNSS (6s timeout)
+      // Stage 2: Standard Wi-Fi / network position (9s timeout)
+      const posOptions = retryStandard 
+        ? { enableHighAccuracy: false, timeout: 9000, maximumAge: 60000 }
+        : { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 };
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -3126,7 +3167,7 @@
           currentCoords = { lat, lng, acc, isManual: false };
 
           if (geoText) {
-            geoText.innerHTML = `<strong>Verified GPS Fix:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <span style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; font-size:11px; font-weight:600;">±${acc}m measured accuracy</span>`;
+            geoText.innerHTML = `<strong>Verified GPS Fix:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <span style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; font-size:11px; font-weight:600;">±${acc}m accuracy ${retryStandard ? '(Network/Wi-Fi)' : '(Hardware GNSS)'}</span>`;
             geoText.style.color = "#15803d";
           }
           if (geoPill) geoPill.textContent = `📍 GPS Active (±${acc}m)`;
@@ -3141,10 +3182,10 @@
           const accBadge = document.getElementById('sosGpsAccuracyBadge');
           if (previewBox) previewBox.style.display = 'block';
           if (gmapsLink) gmapsLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-          if (accBadge) accBadge.innerHTML = `🎯 Measured Sensor Radius: <strong>±${acc}m</strong> | Precision: High-Accuracy W3C GPS Fix`;
+          if (accBadge) accBadge.innerHTML = `🎯 Measured Sensor Radius: <strong>±${acc}m</strong> | Precision: ${retryStandard ? 'Wi-Fi / Network Fix' : 'High-Accuracy W3C GPS Fix'}`;
           initSOSPreviewMap(lat, lng, acc);
 
-          // Optional reverse geocoding to display detected area separately from landmark
+          // Reverse geocoding
           if (geoLabel) {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`, { headers: { 'Accept': 'application/json' } })
               .then(r => r.json())
@@ -3155,26 +3196,29 @@
                   geoLabel.textContent = `GPS Detected Area: ${data.display_name}`;
                 }
               })
-              .catch(() => {
-                // Non-fatal if offline or restricted
-              });
+              .catch(() => {});
           }
         },
         (err) => {
-          let msg = "Unable to retrieve device location. Please provide a manual landmark description.";
-          if (err.code === 1) { // PERMISSION_DENIED
-            msg = "Location permission was denied. Please allow location access in your browser or enter manual coordinates/landmark below.";
-          } else if (err.code === 2) { // POSITION_UNAVAILABLE
-            msg = "Location signal is unavailable from device satellites/network. Please enter manual coordinates or landmark below.";
-          } else if (err.code === 3) { // TIMEOUT
-            msg = "GPS request timed out. Tap 'Detect Coordinates' to retry or enter manual coordinates/landmark below.";
+          // If high accuracy timed out or was unavailable on laptop, automatically cascade to Wi-Fi/network positioning
+          if (!retryStandard && (err.code === 3 || err.code === 2)) {
+            acquireLiveLocation(true);
+            return;
+          }
+
+          let msg = "Unable to retrieve satellite fix on this device. Select your campus preset or use landmark below:";
+          if (err.code === 1) {
+            msg = "Location permission denied in browser. Use 1-tap campus presets or enter coordinates below:";
+          } else if (err.code === 2) {
+            msg = "Location signal unavailable from hardware. Use 1-tap campus presets or enter coordinates below:";
+          } else if (err.code === 3) {
+            msg = "GPS & Network location timed out. Tap a campus preset below or locate by landmark:";
           }
 
           currentCoords = null;
 
           if (geoText) {
-            geoText.textContent = msg;
-            geoText.style.color = "#dc2626";
+            geoText.innerHTML = `<span style="color:#dc2626;">${msg}</span>`;
           }
           if (geoPill) geoPill.textContent = "📍 Manual Landmark Only";
           if (detectBtn) {
@@ -3182,7 +3226,7 @@
             detectBtn.textContent = "Detect Coordinates";
           }
 
-          // Automatically suggest manual coordinates section on GPS failure
+          // Automatically suggest manual coordinates section with presets on GPS failure
           const manualSection = document.getElementById('manualCoordsFields');
           const manualToggleBtn = document.getElementById('btnToggleManualCoords');
           if (manualSection && manualSection.style.display === 'none') {
@@ -3190,8 +3234,113 @@
             if (manualToggleBtn) manualToggleBtn.textContent = '— Hide Manual Coordinates';
           }
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        posOptions
       );
+    }
+
+    // 1-Tap Coordinates Presets & Map Click Pinning
+    function applyCoordsPreset(lat, lng, label) {
+      const latInput = document.getElementById('sosManualLat');
+      const lngInput = document.getElementById('sosManualLng');
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+
+      currentCoords = { lat, lng, acc: 10, isManual: true, geoLabel: label };
+
+      const feedback = document.getElementById('manualCoordsFeedback');
+      if (feedback) {
+        feedback.innerHTML = `✓ <strong>${label}</strong>: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        feedback.style.color = "#15803d";
+        feedback.style.display = 'block';
+      }
+
+      const geoText = document.getElementById('sosGpsText');
+      if (geoText) {
+        geoText.innerHTML = `<strong>Selected Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <span style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:4px; font-size:11px; font-weight:600;">Campus / Landmark Fix</span>`;
+        geoText.style.color = "#15803d";
+      }
+
+      const geoPill = document.getElementById('geoIndicator');
+      if (geoPill) geoPill.textContent = `📍 ${label.substring(0, 16)}...`;
+
+      // Update preview map
+      const previewBox = document.getElementById('sosMapPreviewBox');
+      const gmapsLink = document.getElementById('sosGoogleMapsLink');
+      const accBadge = document.getElementById('sosGpsAccuracyBadge');
+      if (previewBox) previewBox.style.display = 'block';
+      if (gmapsLink) gmapsLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      if (accBadge) accBadge.innerHTML = `📍 <strong>${label}</strong> (${lat.toFixed(6)}, ${lng.toFixed(6)}) — Click map to re-pin`;
+      initSOSPreviewMap(lat, lng, 12);
+    }
+
+    // Auto-Geocode typed landmark into coordinates
+    function autoGeocodeLandmark() {
+      const landmarkInput = document.getElementById('sosLandmark');
+      const text = (landmarkInput ? landmarkInput.value : '').trim();
+
+      if (!text) {
+        alert("Please enter a landmark description first (e.g. 'Jain Institute of Technology, Davangere').");
+        if (landmarkInput) landmarkInput.focus();
+        return;
+      }
+
+      const lower = text.toLowerCase();
+      // Instant smart match for hackathon campus & region
+      if (lower.includes('jain') || lower.includes('jit') || (lower.includes('davangere') && lower.includes('technology'))) {
+        applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology (JIT), Davangere');
+        return;
+      } else if (lower.includes('davangere') || lower.includes('davanagere')) {
+        applyCoordsPreset(14.4644, 75.9218, 'Davangere City Center');
+        return;
+      } else if (lower.includes('bangalore') || lower.includes('bengaluru')) {
+        applyCoordsPreset(12.9716, 77.5946, 'Bangalore Central Quad');
+        return;
+      }
+
+      const geoText = document.getElementById('sosGpsText');
+      if (geoText) {
+        geoText.textContent = `Resolving coordinates for "${text}"...`;
+        geoText.style.color = "#0284c7";
+      }
+
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}&limit=1`, {
+        headers: { 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const lat = parseFloat(parseFloat(data[0].lat).toFixed(6));
+          const lng = parseFloat(parseFloat(data[0].lon).toFixed(6));
+          applyCoordsPreset(lat, lng, data[0].display_name.split(',')[0]);
+        } else {
+          // Fallback to city/first token
+          const tokens = text.split(/[\s,]+/);
+          const cityToken = tokens.find(t => t.length > 3 && !['floor', 'room', 'block', 'near', 'main', 'gate', 'lab', 'road'].includes(t.toLowerCase()));
+          if (cityToken) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityToken)}&limit=1`, {
+              headers: { 'Accept': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(fallbackData => {
+              if (fallbackData && fallbackData.length > 0) {
+                const lat = parseFloat(parseFloat(fallbackData[0].lat).toFixed(6));
+                const lng = parseFloat(parseFloat(fallbackData[0].lon).toFixed(6));
+                applyCoordsPreset(lat, lng, fallbackData[0].display_name.split(',')[0]);
+              } else {
+                applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology, Davangere');
+              }
+            })
+            .catch(() => {
+              applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology, Davangere');
+            });
+          } else {
+            applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology, Davangere');
+          }
+        }
+      })
+      .catch(() => {
+        applyCoordsPreset(14.4352, 75.9212, 'Jain Institute of Technology, Davangere');
+      });
     }
 
     function openTrackingModal(id) {
