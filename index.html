@@ -39,14 +39,25 @@
       padding: 0;
     }
 
-    html, body {
+    html {
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    body {
       background: #ffffff;
       color: var(--ink);
       font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       overflow-x: hidden;
-      overflow-x: clip;
+      min-height: 100vh;
+    }
+
+    /* Modal open scroll lock: prevents background scroll while modal is active */
+    html.modal-open, body.modal-open {
+      overflow: hidden !important;
+      touch-action: none;
     }
 
     a {
@@ -735,12 +746,12 @@
     }
 
     /* -------------------------------------------------------------
-       SCENE 2: STATEMENT (PINNED SCROLL)
+       SCENE 2: STATEMENT (STREAMLINED PINNED SCROLL)
        ------------------------------------------------------------- */
     .statement {
       position: relative;
-      height: 306vh;
-      margin-top: -31vh;
+      height: 160vh;
+      margin-top: 0;
       pointer-events: none;
     }
 
@@ -748,21 +759,25 @@
       position: sticky;
       top: 0;
       height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #stmt {
-      position: absolute;
-      top: 41.5vh;
-      left: 0;
-      right: 0;
+      position: relative;
+      top: auto;
+      left: auto;
+      right: auto;
       text-align: center;
       font-weight: 400;
-      font-size: clamp(20px, 2.8vw, 42px);
-      line-height: 1.16;
+      font-size: clamp(22px, 2.7vw, 40px);
+      line-height: 1.24;
       letter-spacing: -0.03em;
       color: var(--ink);
       white-space: nowrap;
       will-change: transform;
+      padding: 0 var(--gut);
     }
 
     /* -------------------------------------------------------------
@@ -901,6 +916,13 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
+      overscroll-behavior: contain;
+      touch-action: auto;
+    }
+
+    .modal-card {
+      overscroll-behavior: contain;
+      touch-action: pan-y;
     }
 
     .modal-backdrop.active {
@@ -1546,13 +1568,30 @@
         padding: 12px 16px 16px;
       }
 
+      .statement {
+        height: auto !important;
+        min-height: 40vh !important;
+        margin-top: 0 !important;
+        pointer-events: auto !important;
+        padding: 50px 0 !important;
+      }
+
+      .pin {
+        position: relative !important;
+        top: auto !important;
+        height: auto !important;
+      }
+
       #stmt {
+        position: relative !important;
+        top: auto !important;
+        transform: none !important;
         white-space: normal;
-        font-size: clamp(19px, 3.2vw, 28px);
+        font-size: clamp(18px, 4.2vw, 26px);
         max-width: 24em;
         margin: 0 auto;
         padding: 0 20px;
-        line-height: 1.25;
+        line-height: 1.35;
       }
 
       #stmt br {
@@ -1799,7 +1838,7 @@
       </div>
 
       <div class="r">
-        <img id="ship" src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261029_050506_a830ff21-4c71-4272-bc39-b61cacb54463.png&w=1400&q=85" alt="Aerial view of emergency dispatch coordinate zone">
+        <img id="ship" src="./emergency-responders.jpg" alt="Emergency medical response team coordinating tactical triage beside ambulance" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1587745416684-47953f16f02f?auto=format&fit=crop&w=1400&q=80';">
       </div>
     </section>
   </main>
@@ -2232,36 +2271,39 @@
     }
 
     function paint(chars, p, spread, finalColor, accentColor, ghostColor) {
+      if (!chars || !chars.length) return;
       const n = chars.length;
       const isDarkGhost = ghostColor === COLOR_DARK_GHOST;
 
       for (let i = 0; i < n; i++) {
         const item = chars[i];
+        if (!item || !item.span) continue;
         const t = Math.max(0, Math.min(1, (p * (1 + spread) - i / n) / spread));
 
-        let opacity = 0;
+        let opacity = 0.28;
         let blur = 0;
         let col = ghostColor;
 
         if (t === 0) {
-          opacity = isDarkGhost ? 0.22 : 0;
-          blur = isDarkGhost ? 0 : 8;
+          // Guaranteed minimum legibility: text is never completely invisible or lost on reverse scroll
+          opacity = isDarkGhost ? 0.32 : 0.28;
+          blur = 0;
           col = ghostColor;
         } else if (t <= 0.35) {
           const sub = t / 0.35;
-          opacity = isDarkGhost ? 0.22 + 0.78 * sub : sub;
-          blur = 8 - 6.5 * sub;
+          opacity = isDarkGhost ? 0.32 + 0.68 * sub : 0.28 + 0.72 * sub;
+          blur = Math.max(0, 3 * (1 - sub));
           col = ghostColor;
         } else if (t <= 0.70) {
           const sub = (t - 0.35) / 0.35;
           opacity = 1;
-          blur = 1.5 * (1 - sub);
+          blur = 0;
           col = lerpColor(ghostColor, accentColor, sub);
         } else {
           const sub = (t - 0.70) / 0.30;
           opacity = 1;
           blur = 0;
-          const target = item.isHl ? COLOR_HL : finalColor; // Brand highlight for .hl
+          const target = item.isHl ? COLOR_HL : finalColor;
           col = lerpColor(accentColor, target, sub);
         }
 
@@ -2466,8 +2508,10 @@
 
     function onScroll() {
       if (prefersReducedMotion) {
-        row.classList.add('visible');
-        nav.classList.add('on');
+        if (row) row.classList.add('visible');
+        if (nav) nav.classList.add('on');
+        paint(stmtChars, 1, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
+        paint(h2Chars, 1, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
         return;
       }
 
@@ -2475,36 +2519,47 @@
       const vh = window.innerHeight || 800;
       const q = scrollY / vh;
 
-      // 1. Statement Rise & Reveal (smooth progressive sky-blue letter illumination)
-      const s = Math.max(0, Math.min(1, (q - 0.45) / 0.65));
-      const translateY = 0.18 * Math.pow(1 - s, 2) * vh;
-      stmt.style.transform = 'translateY(' + translateY.toFixed(2) + 'px)';
-
-      const pStmt = Math.max(0, Math.min(1, (q - 0.35) / 1.35));
-      paint(stmtChars, pStmt, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
-
-      if (pStmt > 0.40) {
-        nav.classList.add('on');
-      } else {
-        nav.classList.remove('on');
+      // 1. Statement Rise & Reveal (smooth & responsive in both scroll directions)
+      const isMobile = window.innerWidth <= 1024;
+      if (stmt && !isMobile) {
+        const s = Math.max(0, Math.min(1, (q - 0.20) / 0.50));
+        const translateY = 0.10 * Math.pow(1 - s, 2) * vh;
+        stmt.style.transform = 'translateY(' + translateY.toFixed(2) + 'px)';
+      } else if (stmt) {
+        stmt.style.transform = 'none';
       }
 
-      // 2. Dark Split Headline & Row (illuminates as section enters, row fades up on cadence)
-      const splitRect = splitSec.getBoundingClientRect();
-      const splitTop = splitRect.top;
-      const p2 = Math.max(0, Math.min(1, (0.85 - splitTop / vh) / 0.60));
-      paint(h2Chars, p2, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
+      const pStmt = isMobile ? Math.max(0, Math.min(1, (q - 0.10) / 0.50)) : Math.max(0, Math.min(1, (q - 0.15) / 0.80));
+      paint(stmtChars, pStmt, 0.20, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_WHITE);
 
-      if (p2 > 0.50 || splitTop < vh * 0.50) {
-        row.classList.add('visible');
-      } else if (splitTop > vh * 0.85) {
-        row.classList.remove('visible');
+      if (nav) {
+        if (pStmt > 0.35 || scrollY > 180) {
+          nav.classList.add('on');
+        } else {
+          nav.classList.remove('on');
+        }
       }
 
-      // 3. Image Zoom
-      const shipT = Math.max(0, Math.min(1, 1 - splitTop / vh));
-      const scale = 1.08 - 0.08 * shipT;
-      ship.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      // 2. Dark Split Headline & Row (preserves visibility once scrolled into view)
+      if (splitSec) {
+        const splitRect = splitSec.getBoundingClientRect();
+        const splitTop = splitRect.top;
+        const p2 = Math.max(0, Math.min(1, (0.85 - splitTop / vh) / 0.55));
+        paint(h2Chars, p2, 0.35, COLOR_WHITE, COLOR_DARK_ACCENT, COLOR_DARK_GHOST);
+
+        if (row) {
+          if (p2 > 0.35 || splitTop < vh * 0.70) {
+            row.classList.add('visible');
+          }
+        }
+
+        // 3. Image Zoom
+        if (ship) {
+          const shipT = Math.max(0, Math.min(1, 1 - splitTop / vh));
+          const scale = 1.06 - 0.06 * shipT;
+          ship.style.transform = 'scale(' + scale.toFixed(4) + ')';
+        }
+      }
     }
 
     // Scroll & Lifecycle Listeners to prevent blank text on load/refresh/resize
@@ -2682,14 +2737,48 @@
       renderCADList();
     }
 
-    // Modal helpers
+    // Modal helpers with complete body scroll-locking and reliable restoration
+    let activeModalsCount = 0;
+
     function openModal(id) {
-      document.getElementById(id).classList.add('active');
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('active');
+      activeModalsCount++;
+      document.documentElement.classList.add('modal-open');
+      document.body.classList.add('modal-open');
     }
 
     function closeModal(id) {
-      document.getElementById(id).classList.remove('active');
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('active')) {
+        el.classList.remove('active');
+        activeModalsCount = Math.max(0, activeModalsCount - 1);
+      }
+      // Re-verify if any modal is still active
+      const remainingActive = document.querySelector('.modal-backdrop.active');
+      if (!remainingActive) {
+        activeModalsCount = 0;
+        document.documentElement.classList.remove('modal-open');
+        document.body.classList.remove('modal-open');
+      }
     }
+
+    // Global backdrop click and Escape key listeners for accessibility and reliable scroll unlock
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const activeModals = document.querySelectorAll('.modal-backdrop.active');
+        activeModals.forEach(m => closeModal(m.id));
+      }
+    });
+
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          closeModal(backdrop.id);
+        }
+      });
+    });
 
     function openSOSModal() {
       // Clear coordinate state to eliminate any stale GPS fixes
