@@ -749,7 +749,7 @@
        ------------------------------------------------------------- */
     .statement {
       position: relative;
-      height: 200vh;
+      height: 220vh;
       margin-top: 0;
       pointer-events: none;
     }
@@ -899,7 +899,8 @@
 
     .ch {
       display: inline-block;
-      will-change: opacity, color, filter;
+      will-change: opacity, color;
+      transition: color 0.15s ease-out, opacity 0.15s ease-out;
     }
 
     /* -------------------------------------------------------------
@@ -2348,6 +2349,19 @@
       const n = chars.length;
       const isDarkGhost = ghostColor === COLOR_DARK_GHOST;
 
+      // When progress reaches 1.0 (or while stopped at middle), guarantee 100% complete illumination
+      if (p >= 1) {
+        for (let i = 0; i < n; i++) {
+          const item = chars[i];
+          if (!item || !item.span) continue;
+          item.span.style.opacity = '1';
+          const target = item.isHl ? COLOR_HL : finalColor;
+          item.span.style.color = 'rgb(' + target[0] + ',' + target[1] + ',' + target[2] + ')';
+          item.span.style.filter = 'none';
+        }
+        return;
+      }
+
       for (let i = 0; i < n; i++) {
         const item = chars[i];
         if (!item || !item.span) continue;
@@ -2588,22 +2602,29 @@
       const vh = window.innerHeight || 800;
       const isMobile = window.innerWidth <= 1024;
 
-      // 1. Scene 2: Pinned Statement Reveal (Illuminates as statement enters viewport and pins at center)
+      // 1. Scene 2: Pinned Statement Reveal (Completes fully as statement reaches center, stays 100% complete while stopped at middle)
       const stmtSec = document.getElementById('statement');
       if (stmtSec) {
         const stmtRect = stmtSec.getBoundingClientRect();
         const pinDist = stmtSec.offsetHeight - vh;
 
         if (!isMobile && pinDist > 0) {
-          // Reveal starts as statement enters viewport (vh * 0.80) and completes by 70% of pinned travel
-          const revealStart = vh * 0.80;
-          const revealEnd = -pinDist * 0.70;
-          const pStmt = Math.max(0, Math.min(1, (revealStart - stmtRect.top) / (revealStart - revealEnd)));
-          paint(stmtChars, pStmt, 0.18, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+          // Reveal begins as statement enters from bottom (vh * 0.85)
+          // and COMPLETES FULLY as it reaches the center (vh * 0.15)
+          // Throughout the entire pinned travel (stmtRect.top <= 0), it is ALWAYS 100% complete!
+          let pStmt = 0;
+          if (stmtRect.top <= vh * 0.15) {
+            pStmt = 1.0;
+          } else if (stmtRect.top < vh * 0.85) {
+            pStmt = (vh * 0.85 - stmtRect.top) / (vh * 0.70);
+          } else {
+            pStmt = 0;
+          }
+          paint(stmtChars, pStmt, 0.15, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
 
-          // Smooth vertical settling (+35px -> 0px) into center screen
-          const s = Math.max(0, Math.min(1, (revealStart - stmtRect.top) / (vh * 0.80)));
-          const translateY = 35 * Math.pow(1 - s, 2);
+          // Smooth settling (+28px -> 0px) into center screen
+          const s = Math.max(0, Math.min(1, (vh * 0.85 - stmtRect.top) / (vh * 0.70)));
+          const translateY = 28 * Math.pow(1 - s, 2);
           if (stmt) {
             stmt.style.transform = `translateY(${translateY.toFixed(1)}px)`;
           }
@@ -2616,10 +2637,17 @@
             }
           }
         } else {
-          // Mobile responsive: smoothly illuminates as section passes viewport
+          // Mobile responsive: completes fully as section reaches center (vh * 0.45)
           const rect = (stmt || stmtSec).getBoundingClientRect();
-          const pMobile = Math.max(0, Math.min(1, (vh * 0.85 - rect.top) / (vh * 0.55)));
-          paint(stmtChars, pMobile, 0.20, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
+          let pMobile = 0;
+          if (rect.top <= vh * 0.45) {
+            pMobile = 1.0;
+          } else if (rect.top < vh * 0.85) {
+            pMobile = (vh * 0.85 - rect.top) / (vh * 0.40);
+          } else {
+            pMobile = 0;
+          }
+          paint(stmtChars, pMobile, 0.15, COLOR_NAVY, COLOR_REVEAL_ACCENT, COLOR_LIGHT_GHOST);
           if (stmt) stmt.style.transform = 'none';
 
           if (nav) {
